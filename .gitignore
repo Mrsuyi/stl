@@ -1,4 +1,6 @@
+__pycache__
+_test
+_bin
 **.exe
 **.o
 **.out
-__pycache__
