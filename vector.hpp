@@ -24,9 +24,13 @@ public:
     // iterators
     template <class Type>
     class iter_impl;
+    template <class Type>
+    class iter_rev_impl;
 
     using iterator = iter_impl<value_type>;
     using const_iterator = iter_impl<const value_type>;
+    using reverse_iterator = iter_rev_impl<value_type>;
+    using const_reverse_iterator = iter_rev_impl<const value_type>;
 
     // constructor & destructor
 public:
@@ -40,10 +44,12 @@ public:
 
     // member functions
     void reserve(size_type size);
-    size_type capacity() const;
-    // void resize(size_type size, value_type val = value_type());
-    size_type size() const;
+    void resize(size_type size, value_type val = value_type());
     void clear();
+    void shrink_to_fit();
+
+    size_type capacity() const;
+    size_type size() const;
 
     reference operator[](size_type n);
     const_reference operator[](size_type n) const;
@@ -53,6 +59,18 @@ public:
     iterator end();
     const_iterator end() const;
     const_iterator begin() const;
+    const_iterator cbegin() const;
+    const_iterator cend() const;
+    reverse_iterator rbegin();
+    reverse_iterator rend();
+    const_reverse_iterator rbegin() const;
+    const_reverse_iterator rend() const;
+    const_reverse_iterator crbegin() const;
+    const_reverse_iterator crend() const;
+
+private:
+    void realloc(size_type size);
+    static inline size_t proper_capacity(size_type size);
 
     // member-variable
 private:
@@ -62,6 +80,16 @@ private:
 };
 
 template <class T, class Alloc>
+typename vector<T, Alloc>::size_type
+vector<T, Alloc>::proper_capacity(size_type size)
+{
+    size_type ret = 1U;
+    for (; ret < size; ret *= 2)
+        ;
+    return ret;
+}
+
+template <class T, class Alloc>
 vector<T, Alloc>::vector()
 {
 }
@@ -69,13 +97,8 @@ vector<T, Alloc>::vector()
 template <class T, class Alloc>
 vector<T, Alloc>::vector(size_type n, const_reference val)
 {
-    size_t alloc = 1U;
-    for (; alloc < n; alloc *= 2);
-    reserve(alloc);
-    for (size_type i = 0; i < n; ++i)
-    {
-        new (ptr_ + i) T(val);
-    }
+    reserve(proper_capacity(n));
+    for (size_type i = 0; i < n; ++i) new (ptr_ + i) T(val);
     size_ = n;
 }
 
@@ -91,16 +114,61 @@ vector<T, Alloc>::~vector()
 
 template <class T, class Alloc>
 void
-vector<T, Alloc>::push_back(const_reference val)
+vector<T, Alloc>::realloc(size_type size)
 {
-    if (capacity_ <= size_)
+    capacity_ = size;
+    ptr_ = (pointer)std::realloc(ptr_, size * sizeof(T));
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::resize(size_type size, value_type val)
+{
+    if (size > size_)
     {
-        size_t alloc = 1U;
-        for (; alloc <= size_; alloc *= 2);
-        reserve(alloc);
+        if (size > capacity_) realloc(proper_capacity(size));
+        for (size_t i = size_; i < size; ++i)
+        {
+            new (ptr_ + i) T(val);
+        }
     }
-    new (ptr_ + size_) T(val);
-    ++size_;
+    else
+    {
+        for (size_t i = size; i < size_; ++i)
+        {
+            (ptr_ + i)->~T();
+        }
+    }
+    size_ = size;
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::reserve(size_type size)
+{
+    if (size == 0)
+    {
+        free(ptr_);
+    }
+    else if (size > capacity_)
+    {
+        realloc(proper_capacity(size));
+    }
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::clear()
+{
+    for (size_type i = 0; i < size_; ++i) (ptr_ + i)->~T();
+    size_ = 0;
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::shrink_to_fit()
+{
+    realloc(proper_capacity(size_));
 }
 
 template <class T, class Alloc>
@@ -111,32 +179,19 @@ vector<T, Alloc>::size() const
 }
 
 template <class T, class Alloc>
-void
-vector<T, Alloc>::clear()
-{
-    size_ = 0;
-}
-
-// template <class T, class Alloc>
-// void
-// vector<T, Alloc>::resize(size_type size, value_type val)
-//{
-/*}*/
-
-template <class T, class Alloc>
-void
-vector<T, Alloc>::reserve(size_type size)
-{
-    // TODO call std::realloc may cause memory problem
-    ptr_ = (pointer)std::realloc(ptr_, size * sizeof(T));
-    capacity_ = size;
-}
-
-template <class T, class Alloc>
 typename vector<T, Alloc>::size_type
 vector<T, Alloc>::capacity() const
 {
     return capacity_;
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::push_back(const_reference val)
+{
+    if (capacity_ <= size_) realloc(proper_capacity(size_ + 1));
+    new (ptr_ + size_) T(val);
+    ++size_;
 }
 
 template <class T, class Alloc>
@@ -180,30 +235,89 @@ vector<T, Alloc>::end() const
     return const_iterator(ptr_, size_);
 }
 
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_iterator
+vector<T, Alloc>::cbegin() const
+{
+    return const_iterator(ptr_, 0);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_iterator
+vector<T, Alloc>::cend() const
+{
+    return const_iterator(ptr_, size_);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::reverse_iterator
+vector<T, Alloc>::rbegin()
+{
+    return reverse_iterator(ptr_ + size_, 0);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::reverse_iterator
+vector<T, Alloc>::rend()
+{
+    return reverse_iterator(ptr_ + size_, size_);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reverse_iterator
+vector<T, Alloc>::rbegin() const
+{
+    return reverse_iterator(ptr_ + size_, 0);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reverse_iterator
+vector<T, Alloc>::rend() const
+{
+    return reverse_iterator(ptr_ + size_, size_);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reverse_iterator
+vector<T, Alloc>::crbegin() const
+{
+    return const_reverse_iterator(ptr_ + size_, 0);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reverse_iterator
+vector<T, Alloc>::crend() const
+{
+    return const_reverse_iterator(ptr_ + size_, size_);
+}
+
 //================================= itertor ==================================//
 
 template <class T, class Alloc>
 template <class Type>
 class vector<T, Alloc>::iter_impl
 {
+protected:
     using this_t = vector<T, Alloc>::iter_impl<Type>;
     using container = vector<Type, Alloc>;
-    using value_type = typename container::value_type;
-    using pointer = typename container::pointer;
-    using reference = typename container::reference;
+    using value_type = Type;
+    using pointer = Type*;
+    using reference = Type&;
     using size_type = typename container::size_type;
     using difference_type = typename container::difference_type;
 
 public:
-    iter_impl(pointer, difference_type = 0);
+    iter_impl(pointer, difference_type);
 
     reference operator*() const;
     pointer operator->() const;
 
     this_t& operator++();
+    this_t& operator--();
     bool operator!=(const this_t&);
+    bool operator==(const this_t&);
 
-private:
+protected:
     pointer ptr_;
     difference_type offset_;
 };
@@ -218,23 +332,21 @@ vector<T, Alloc>::iter_impl<Type>::iter_impl(pointer ptr,
 
 template <class T, class Alloc>
 template <class Type>
-typename vector<T, Alloc>::template iter_impl<Type>::iter_impl::reference
-    vector<T, Alloc>::iter_impl<Type>::iter_impl::operator*() const
+Type& vector<T, Alloc>::iter_impl<Type>::iter_impl::operator*() const
 {
     return *(ptr_ + offset_);
 }
 
 template <class T, class Alloc>
 template <class Type>
-typename vector<T, Alloc>::template iter_impl<Type>::iter_impl::pointer
-    vector<T, Alloc>::iter_impl<Type>::iter_impl::operator->() const
+Type* vector<T, Alloc>::iter_impl<Type>::iter_impl::operator->() const
 {
     return ptr_ + offset_;
 }
 
 template <class T, class Alloc>
 template <class Type>
-typename vector<T, Alloc>::template iter_impl<Type>::iter_impl::this_t&
+typename vector<T, Alloc>::template iter_impl<Type>::iter_impl&
     vector<T, Alloc>::iter_impl<Type>::iter_impl::operator++()
 {
     ++offset_;
