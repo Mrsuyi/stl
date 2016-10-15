@@ -79,6 +79,16 @@ public:
     void push_back(const_reference val);
     void pop_back();
 
+    iterator insert(iterator position, const_reference val);
+    void insert(iterator position, size_type n, const_reference val);
+    template <class InputIterator>
+    void insert(iterator position, InputIterator first, InputIterator last);
+
+    template <class... Args>
+    iterator emplace(const_iterator position, Args&&... args);
+    template <class... Args>
+    void emplace_back(Args&&... args);
+
     // get
     reference front();
     const_reference front() const;
@@ -202,7 +212,10 @@ void
 vector<T, Alloc>::realloc(size_type size)
 {
     capacity_ = size;
-    ptr_ = (pointer)std::realloc(ptr_, size * sizeof(value_type));
+    if (size == 0)
+        free(ptr_);
+    else
+        ptr_ = (pointer)std::realloc(ptr_, size * sizeof(value_type));
 }
 
 template <class T, class Alloc>
@@ -231,11 +244,7 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::reserve(size_type size)
 {
-    if (size == 0)
-    {
-        free(ptr_);
-    }
-    else if (size > capacity_)
+    if (size > capacity_)
     {
         realloc(proper_capacity(size));
     }
@@ -286,6 +295,25 @@ vector<T, Alloc>::pop_back()
 {
     --size_;
     (ptr_ + size_)->~value_type();
+}
+
+template <class T, class Alloc>
+template <class... Args>
+typename vector<T, Alloc>::iterator
+vector<T, Alloc>::emplace(const_iterator position, Args&&... args)
+{
+    ++size_;
+    reserve(size_);
+}
+
+template <class T, class Alloc>
+template <class... Args>
+void
+vector<T, Alloc>::emplace_back(Args&&... args)
+{
+    ++size_;
+    reserve(size_);
+    new (ptr_ + size_ - 1) value_type(std::forward(args)...);
 }
 
 //================ get ===============//
