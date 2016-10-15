@@ -3,7 +3,9 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 #include <memory>
+#include <stdexcept>
 
 namespace mrsuyi
 {
@@ -32,25 +34,58 @@ public:
     using reverse_iterator = iter_rev_impl<value_type>;
     using const_reverse_iterator = iter_rev_impl<const value_type>;
 
-    // constructor & destructor
-public:
-    vector();
-    vector(size_type n, const_reference val);
-
-    ~vector();
-
-    void push_back(const_reference val);
-    void pop_back();
-
     // member functions
+private:
+    void realloc(size_type size);
+    static inline size_t proper_capacity(size_type size);
+
+public:
+    // cons & des
+    // default
+    vector();
+    explicit vector(const allocator_type& alloc);
+    // fill
+    explicit vector(size_type n,
+                    const allocator_type& alloc = allocator_type());
+    vector(size_type n, const_reference val,
+           const allocator_type& alloc = allocator_type());
+    // range
+    template <class InputIterator>
+    vector(InputIterator first, InputIterator last,
+           const allocator_type& alloc = allocator_type(),
+           typename std::enable_if<
+               !std::is_integral<InputIterator>::value>::type* = 0);
+    // copy
+    explicit vector(const vector& x);
+    vector(const vector& x, const allocator_type& alloc);
+    // move
+    vector(vector&& x);
+    vector(vector&& x, const allocator_type& alloc);
+    // list
+    vector(std::initializer_list<value_type> il,
+           const allocator_type& alloc = allocator_type());
+    // des
+    ~vector() noexcept;
+
+    // mem
     void reserve(size_type size);
     void resize(size_type size, value_type val = value_type());
     void clear();
     void shrink_to_fit();
-
     size_type capacity() const;
     size_type size() const;
 
+    // set
+    void push_back(const_reference val);
+    void pop_back();
+
+    // get
+    reference front();
+    const_reference front() const;
+    reference back();
+    const_reference back() const;
+    reference at(size_type n);
+    const_reference at(size_type n) const;
     reference operator[](size_type n);
     const_reference operator[](size_type n) const;
 
@@ -68,15 +103,12 @@ public:
     const_reverse_iterator crbegin() const;
     const_reverse_iterator crend() const;
 
-private:
-    void realloc(size_type size);
-    static inline size_t proper_capacity(size_type size);
-
     // member-variable
 private:
     pointer ptr_ = nullptr;
     size_type size_ = 0;
     size_type capacity_ = 0;
+    // allocator_type alloc_; TODO allocator is useless in this impl of vector
 };
 
 template <class T, class Alloc>
@@ -89,35 +121,88 @@ vector<T, Alloc>::proper_capacity(size_type size)
     return ret;
 }
 
+// cons & des
 template <class T, class Alloc>
-vector<T, Alloc>::vector()
+vector<T, Alloc>::vector() : vector(allocator_type())
 {
 }
 
 template <class T, class Alloc>
-vector<T, Alloc>::vector(size_type n, const_reference val)
+vector<T, Alloc>::vector(const allocator_type&)
 {
-    reserve(proper_capacity(n));
-    for (size_type i = 0; i < n; ++i) new (ptr_ + i) T(val);
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>::vector(size_type n, const allocator_type&)
+    : vector(n, value_type())
+{
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>::vector(size_type n, const_reference val,
+                         const allocator_type&)
+{
+    reserve(n);
+    for (size_type i = 0; i < n; ++i) new (ptr_ + i) value_type(val);
     size_ = n;
 }
 
 template <class T, class Alloc>
-vector<T, Alloc>::~vector()
+template <class InputIterator>
+vector<T, Alloc>::vector(
+    InputIterator first, InputIterator last, const allocator_type&,
+    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+{
+    for (; first != last; ++first)
+    {
+        push_back(*first);
+    }
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>::vector(const vector& x)
+{
+    reserve(x.size_);
+    for (size_type i = 0; i < x.size_; ++i)
+        new (ptr_ + i) value_type(*(x.ptr_ + i));
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>::vector(const vector& x, const allocator_type&) : vector(x)
+{
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>::vector(vector&& x)
+{
+    ptr_ = x.ptr_;
+    size_ = x.size_;
+    capacity_ = x.capacity_;
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>::vector(vector&& x, const allocator_type&)
+    : vector(std::move(x))
+{
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>::~vector() noexcept
 {
     for (size_type i = 0; i < size_; ++i)
     {
-        (ptr_ + i)->~T();
+        (ptr_ + i)->~value_type();
     }
     free(ptr_);
 }
 
+//================ mem ===============//
 template <class T, class Alloc>
 void
 vector<T, Alloc>::realloc(size_type size)
 {
     capacity_ = size;
-    ptr_ = (pointer)std::realloc(ptr_, size * sizeof(T));
+    ptr_ = (pointer)std::realloc(ptr_, size * sizeof(value_type));
 }
 
 template <class T, class Alloc>
@@ -129,14 +214,14 @@ vector<T, Alloc>::resize(size_type size, value_type val)
         if (size > capacity_) realloc(proper_capacity(size));
         for (size_t i = size_; i < size; ++i)
         {
-            new (ptr_ + i) T(val);
+            new (ptr_ + i) value_type(val);
         }
     }
     else
     {
         for (size_t i = size; i < size_; ++i)
         {
-            (ptr_ + i)->~T();
+            (ptr_ + i)->~value_type();
         }
     }
     size_ = size;
@@ -160,7 +245,7 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::clear()
 {
-    for (size_type i = 0; i < size_; ++i) (ptr_ + i)->~T();
+    for (size_type i = 0; i < size_; ++i) (ptr_ + i)->~value_type();
     size_ = 0;
 }
 
@@ -185,13 +270,67 @@ vector<T, Alloc>::capacity() const
     return capacity_;
 }
 
+//================ set ===============//
 template <class T, class Alloc>
 void
 vector<T, Alloc>::push_back(const_reference val)
 {
     if (capacity_ <= size_) realloc(proper_capacity(size_ + 1));
-    new (ptr_ + size_) T(val);
+    new (ptr_ + size_) value_type(val);
     ++size_;
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::pop_back()
+{
+    --size_;
+    (ptr_ + size_)->~value_type();
+}
+
+//================ get ===============//
+template <class T, class Alloc>
+typename vector<T, Alloc>::reference
+vector<T, Alloc>::front()
+{
+    return *ptr_;
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reference
+vector<T, Alloc>::front() const
+{
+    return *ptr_;
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::reference
+vector<T, Alloc>::back()
+{
+    return *(ptr_ + size_ - 1);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reference
+vector<T, Alloc>::back() const
+{
+    return *(ptr_ + size_ - 1);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::reference
+vector<T, Alloc>::at(size_type n)
+{
+    if (n >= size_) throw std::out_of_range("out of range");
+    return *(ptr_ + n);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reference
+vector<T, Alloc>::at(size_type n) const
+{
+    if (n >= size_) throw std::out_of_range("out of range");
+    return *(ptr_ + n);
 }
 
 template <class T, class Alloc>
@@ -207,6 +346,7 @@ typename vector<T, Alloc>::const_reference vector<T, Alloc>::operator[](
     return *(ptr_ + n);
 }
 
+//============== iterate =============//
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::begin()
