@@ -32,11 +32,12 @@ void con_de()
 void mem()
 {
     mrsuyi::vector<int> ints;
+    printf("pushed=0, size=%lu, capacity=%lu\n", ints.size(), ints.capacity());
 
     for (int i = 0; i < 17; ++i)
     {
         ints.push_back(i);
-        printf("i=%d, size=%lu, capacity=%lu\n", i, ints.size(), ints.capacity());
+        printf("pushed=%d, size=%lu, capacity=%lu\n", i + 1, ints.size(), ints.capacity());
     }
 }
  
@@ -60,8 +61,14 @@ void iter()
 
 int main()
 {
-    iter();
-    con_de();
+    //iter();
+    //mem();
+    //con_de();
+    
+    mrsuyi::vector<int> v;
+    v.push_back(1);
+    v.push_back(1);
+    v.push_back(1);
 
     return 0;
 };
