@@ -24,7 +24,7 @@ con_de()
     mrsuyi::vector<shit> v;
     v.push_back(shit());
 
-    vector<int> shit = {1, 2, 3};
+    std::vector<int> shit = {1, 2, 3};
     mrsuyi::vector<int> fuck(shit.begin(), shit.end());
     assert(fuck.size() == shit.size());
 }
@@ -41,6 +41,45 @@ mem()
         printf("pushed=%d, size=%lu, capacity=%lu\n", i + 1, ints.size(),
                ints.capacity());
     }
+}
+
+void
+insert()
+{
+    mrsuyi::vector<int> ints(2, 1);
+    auto it = ints.begin();
+    ++it;
+    it = ints.insert(it, 10);
+    ++it;
+    std::vector<int> ins = {1, 2, 3};
+    ints.insert(it, ins.begin(), ins.end());
+    it = ints.end();
+    ints.insert(it, 2, 666);
+
+    assert(ints.size() == 8);
+    assert(ints[0] == 1);
+    assert(ints[1] == 10);
+    assert(ints[2] == 1);
+    assert(ints[3] == 2);
+    assert(ints[4] == 3);
+    assert(ints[5] == 1);
+    assert(ints[6] == 666);
+    assert(ints[7] == 666);
+}
+
+void
+emplace()
+{
+    mrsuyi::vector<int> ints(2, 1);
+    auto it = ints.begin();
+    ++it;
+    ints.emplace(it, 10);
+    ints.emplace_back(20);
+    assert(ints.size() == 4);
+    assert(ints[0] == 1);
+    assert(ints[1] == 10);
+    assert(ints[2] == 1);
+    assert(ints[3] == 20);
 }
 
 void
@@ -68,6 +107,8 @@ main()
     iter();
     mem();
     con_de();
+    emplace();
+    insert();
 
     return 0;
 };

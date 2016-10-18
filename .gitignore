@@ -3,3 +3,4 @@ _bin
 **.exe
 **.o
 **.out
+**/*.swp

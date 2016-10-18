@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <cstring>
 #include <initializer_list>
 #include <stdexcept>
 
@@ -30,8 +31,8 @@ public:
 
     // member functions
 private:
+    // ensure capcity_ >= size (size > 0)
     void realloc(size_type size);
-    static inline size_t proper_capacity(size_type size);
 
 public:
     // cons & des
@@ -76,7 +77,9 @@ public:
     iterator insert(iterator position, const_reference val);
     void insert(iterator position, size_type n, const_reference val);
     template <class InputIterator>
-    void insert(iterator position, InputIterator first, InputIterator last);
+    void insert(iterator position, InputIterator first, InputIterator last,
+                typename std::enable_if<
+                    !std::is_integral<InputIterator>::value>::type* = 0);
 
     template <class... Args>
     iterator emplace(const_iterator position, Args&&... args);
@@ -114,16 +117,6 @@ private:
     size_type capacity_ = 0;
     allocator_type alloc_;
 };
-
-template <class T, class Alloc>
-typename vector<T, Alloc>::size_type
-vector<T, Alloc>::proper_capacity(size_type size)
-{
-    size_type ret = 1U;
-    for (; ret < size; ret *= 2)
-        ;
-    return ret;
-}
 
 // cons & des
 template <class T, class Alloc>
@@ -202,11 +195,10 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::realloc(size_type size)
 {
-    capacity_ = size;
-    if (size == 0)
-        alloc_.deallocate(ptr_, capacity_);
-    else
-        ptr_ = alloc_.allocate(size, ptr_);
+    capacity_ = 1U;
+    for (; capacity_ < size; capacity_ *= 2)
+        ;
+    ptr_ = alloc_.allocate(capacity_, ptr_);
 }
 
 template <class T, class Alloc>
@@ -215,12 +207,13 @@ vector<T, Alloc>::resize(size_type size, value_type val)
 {
     if (size > size_)
     {
-        if (size > capacity_) realloc(proper_capacity(size));
-        for (size_t i = size_; i < size; ++i) alloc_.construct(ptr_ + i, val);
+        if (size > capacity_) realloc(size);
+        for (size_type i = size_; i < size; ++i)
+            alloc_.construct(ptr_ + i, val);
     }
     else
     {
-        for (size_t i = size; i < size_; ++i) alloc_.destroy(ptr_ + i);
+        for (size_type i = size; i < size_; ++i) alloc_.destroy(ptr_ + i);
     }
     size_ = size;
 }
@@ -229,7 +222,7 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::reserve(size_type size)
 {
-    if (size > capacity_) realloc(proper_capacity(size));
+    if (size > capacity_) realloc(size);
 }
 
 template <class T, class Alloc>
@@ -244,7 +237,10 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::shrink_to_fit()
 {
-    realloc(proper_capacity(size_));
+    if (size_ == 0)
+        alloc_.deallocate(ptr_, capacity_);
+    else
+        realloc(size_);
 }
 
 template <class T, class Alloc>
@@ -266,7 +262,7 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::push_back(const_reference val)
 {
-    if (capacity_ <= size_) realloc(proper_capacity(size_ + 1));
+    if (capacity_ <= size_) realloc(size_ + 1);
     alloc_.construct(ptr_ + size_, val);
     ++size_;
 }
@@ -280,12 +276,55 @@ vector<T, Alloc>::pop_back()
 }
 
 template <class T, class Alloc>
-template <class... Args>
 typename vector<T, Alloc>::iterator
-vector<T, Alloc>::emplace(const_iterator, Args&&...)
+vector<T, Alloc>::insert(iterator position, const_reference val)
 {
+    difference_type diff = position - ptr_;
     ++size_;
     reserve(size_);
+    pointer pos = ptr_ + diff;
+    memmove((void*)(pos + 1), (const void*)(pos),
+            (size_ - (pos - ptr_ + 1)) * sizeof(value_type));
+    alloc_.construct(pos, val);
+    return pos;
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::insert(iterator position, size_type n, const_reference val)
+{
+    difference_type diff = position - ptr_;
+    size_ += n;
+    reserve(size_);
+    pointer pos = ptr_ + diff;
+    memmove((void*)(pos + n), (const void*)(pos),
+            (size_ - (pos - ptr_ + 1)) * sizeof(value_type));
+    for (size_type i = 0; i < n; ++i) alloc_.construct(pos + i, val);
+}
+
+template <class T, class Alloc>
+template <class InputIterator>
+void
+vector<T, Alloc>::insert(
+    iterator position, InputIterator first, InputIterator last,
+    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+{
+    for (; first != last; ++first) position = insert(position, *first) + 1;
+}
+
+template <class T, class Alloc>
+template <class... Args>
+typename vector<T, Alloc>::iterator
+vector<T, Alloc>::emplace(const_iterator position, Args&&... args)
+{
+    difference_type diff = position - ptr_;
+    ++size_;
+    reserve(size_);
+    pointer pos = ptr_ + diff;
+    memmove((void*)(pos + 1), (const void*)(pos),
+            (size_ - (pos - ptr_ + 1)) * sizeof(value_type));
+    alloc_.construct(pos, std::forward<Args>(args)...);
+    return pos;
 }
 
 template <class T, class Alloc>
@@ -295,7 +334,7 @@ vector<T, Alloc>::emplace_back(Args&&... args)
 {
     ++size_;
     reserve(size_);
-    alloc_.construct(ptr_ + size_ - 1, std::forward(args)...);
+    alloc_.construct(ptr_ + size_ - 1, std::forward<Args>(args)...);
 }
 
 //================ get ===============//
