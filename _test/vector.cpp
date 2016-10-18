@@ -1,7 +1,7 @@
-#include <iostream>
-#include <cassert>
-#include <vector>
 #include "vector.hpp"
+#include <cassert>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -9,8 +9,7 @@ struct shit
 {
     shit() { cout << "construct shit\n"; }
     ~shit() { cout << "destruct shit\n"; }
-
-    void* operator new (size_t sz, void*)
+    void* operator new(size_t sz, void*)
     {
         cout << "placement new shit\n";
         return ::operator new(sz);
@@ -19,7 +18,8 @@ struct shit
     void show() { cout << "shit\n"; }
 };
 
-void con_de()
+void
+con_de()
 {
     mrsuyi::vector<shit> v;
     v.push_back(shit());
@@ -29,7 +29,8 @@ void con_de()
     assert(fuck.size() == shit.size());
 }
 
-void mem()
+void
+mem()
 {
     mrsuyi::vector<int> ints;
     printf("pushed=0, size=%lu, capacity=%lu\n", ints.size(), ints.capacity());
@@ -37,11 +38,13 @@ void mem()
     for (int i = 0; i < 17; ++i)
     {
         ints.push_back(i);
-        printf("pushed=%d, size=%lu, capacity=%lu\n", i + 1, ints.size(), ints.capacity());
+        printf("pushed=%d, size=%lu, capacity=%lu\n", i + 1, ints.size(),
+               ints.capacity());
     }
 }
- 
-void iter()
+
+void
+iter()
 {
     // non-const
     mrsuyi::vector<int> v(10, 1);
@@ -59,17 +62,12 @@ void iter()
     }
 }
 
-int main()
+int
+main()
 {
-    //iter();
-    //mem();
-    //con_de();
-    
-    mrsuyi::vector<int> v;
-    v.push_back(1);
-    v.push_back(1);
-    v.push_back(1);
+    iter();
+    mem();
+    con_de();
 
     return 0;
 };
-

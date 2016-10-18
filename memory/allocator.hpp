@@ -71,10 +71,15 @@ allocator<T>::allocator(const allocator<U>&) noexcept
 }
 
 template <class T>
+allocator<T>::~allocator() noexcept
+{
+}
+
+template <class T>
 typename allocator<T>::pointer
 allocator<T>::allocate(size_type n, allocator<void>::const_pointer hint)
 {
-    return realloc((void*)hint, n * sizeof(value_type));
+    return (pointer)realloc((void*)hint, n * sizeof(value_type));
 }
 
 template <class T>
@@ -89,7 +94,7 @@ template <class U, class... Args>
 void
 allocator<T>::construct(U* p, Args&&... args)
 {
-    new (p) U(std::forward(args)...);
+    ::new ((void*)p) U(std::forward<Args>(args)...);
 }
 
 template <class T>

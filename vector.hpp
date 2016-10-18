@@ -4,12 +4,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
-#include <memory>
 #include <stdexcept>
+
+#include "memory/allocator.hpp"
 
 namespace mrsuyi
 {
-template <class T, class Alloc = std::allocator<T>>
+template <class T, class Alloc = allocator<T>>
 class vector
 {
     // typedefs
