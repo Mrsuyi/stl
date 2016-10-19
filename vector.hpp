@@ -5,8 +5,10 @@
 #include <cstring>
 #include <cstring>
 #include <initializer_list>
+#include <iostream>
 #include <stdexcept>
 
+#include "algorithm.hpp"
 #include "memory/allocator.hpp"
 
 namespace mrsuyi
@@ -62,6 +64,8 @@ public:
     // des
     ~vector() noexcept;
 
+    void swap(vector& x);
+
     vector& operator=(const vector& x);
     vector& operator=(vector&& x);
     vector& operator=(std::initializer_list<value_type> il);
@@ -77,6 +81,13 @@ public:
     bool empty() const noexcept;
 
     // set
+    template <class InputIterator>
+    void assign(InputIterator first, InputIterator last,
+                typename std::enable_if<
+                    !std::is_integral<InputIterator>::value>::type* = 0);
+    void assign(size_type n, const_reference val);
+    void assign(std::initializer_list<value_type> il);
+
     void push_back(const_reference val);
     void push_back(value_type&& val);
     void pop_back();
@@ -179,6 +190,7 @@ vector<T, Alloc>::vector(const vector& x, const allocator_type& alloc)
     : alloc_(alloc)
 {
     reserve(x.size_);
+    size_ = x.size_;
     for (size_type i = 0; i < x.size_; ++i)
         alloc_.construct(ptr_ + i, *(x.ptr_ + i));
 }
@@ -218,21 +230,35 @@ vector<T, Alloc>::~vector() noexcept
 }
 
 template <class T, class Alloc>
+void
+vector<T, Alloc>::swap(vector& x)
+{
+    std::swap(ptr_, x.ptr_);
+    std::swap(size_, x.size_);
+    std::swap(capacity_, x.capacity_);
+}
+
+template <class T, class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(const vector& x)
 {
+    vector(x).swap(*this);
+    return *this;
 }
 
 template <class T, class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(vector&& x)
 {
+    vector(std::move(x)).swap(*this);
+    return *this;
 }
 
 template <class T, class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(std::initializer_list<value_type> il)
 {
+    vector(il).swap(*this);
     return *this;
 }
 
@@ -319,6 +345,39 @@ vector<T, Alloc>::empty() const noexcept
 }
 
 //================ set ===============//
+template <class T, class Alloc>
+template <class InputIterator>
+void
+vector<T, Alloc>::assign(
+    InputIterator first, InputIterator last,
+    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+{
+    clear();
+    for (; first != last; ++first) push_back(*first);
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::assign(size_type n, const_reference val)
+{
+    clear();
+    for (size_type i = 0; i < n; ++i) alloc_.construct(ptr_ + i, val);
+    size_ = n;
+}
+
+template <class T, class Alloc>
+void
+vector<T, Alloc>::assign(std::initializer_list<value_type> il)
+{
+    clear();
+    reserve(il.size());
+    for (auto it = il.begin(); it != il.end(); ++it)
+    {
+        alloc_.construct(ptr_ + size_, *it);
+        ++size_;
+    }
+}
+
 template <class T, class Alloc>
 void
 vector<T, Alloc>::push_back(const_reference val)
@@ -558,5 +617,50 @@ typename vector<T, Alloc>::const_iterator
 vector<T, Alloc>::cend() const noexcept
 {
     return ptr_ + size_;
+}
+
+//============== iterate =============//
+template <class T, class Alloc>
+bool
+operator==(const vector<T, Alloc>& lhs, const vector<T>& rhs)
+{
+    return lhs.size() == rhs.size() &&
+           equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+template <class T, class Alloc>
+bool
+operator!=(const vector<T, Alloc>& lhs, const vector<T>& rhs)
+{
+    return !(lhs == rhs);
+}
+
+template <class T, class Alloc>
+bool
+operator<(const vector<T, Alloc>& lhs, const vector<T>& rhs)
+{
+    return lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(),
+                                   rhs.end());
+}
+
+template <class T, class Alloc>
+bool
+operator<=(const vector<T, Alloc>& lhs, const vector<T>& rhs)
+{
+    return !(rhs < lhs);
+}
+
+template <class T, class Alloc>
+bool
+operator>(const vector<T, Alloc>& lhs, const vector<T>& rhs)
+{
+    return rhs < lhs;
+}
+
+template <class T, class Alloc>
+bool
+operator>=(const vector<T, Alloc>& lhs, const vector<T>& rhs)
+{
+    return !(lhs < rhs);
 }
 }

@@ -1,35 +1,108 @@
-#include "vector.hpp"
+#include "../vector.hpp"
 #include <cassert>
 #include <iostream>
 #include <vector>
 
 using namespace std;
 
+template <class T>
+void
+print(const T& t)
+{
+    for (auto& ele : t) cout << ele << "  ";
+    cout << endl;
+}
+
 struct shit
 {
     shit() { cout << "construct shit\n"; }
+    shit(const shit&) { cout << "construct copy\n"; }
+    shit(shit&&) { cout << "construct move\n"; }
     ~shit() { cout << "destruct shit\n"; }
-    void* operator new(size_t sz, void*)
+    void*
+    operator new(size_t sz, void*)
     {
         cout << "placement new shit\n";
         return ::operator new(sz);
     }
 
-    void show() { cout << "shit\n"; }
+    void
+    show()
+    {
+        cout << "shit\n";
+    }
 };
+
+void
+cmp()
+{
+    mrsuyi::vector<int> v123 = {1, 2, 3};
+    mrsuyi::vector<int> v12 = {1, 2};
+    mrsuyi::vector<int> v122 = {1, 2, 2};
+
+    assert(v123 == mrsuyi::vector<int>({1, 2, 3}));
+    assert(v123 != v12);
+    assert(v123 > v12);
+    assert(v123 >= v12);
+    assert(v12 < v123);
+    assert(v12 <= v123);
+
+    assert(v12 != v122);
+    assert(v123 > v122);
+    assert(v123 >= v122);
+    assert(v122 < v123);
+    assert(v122 <= v123);
+}
 
 void
 con_de()
 {
-    mrsuyi::vector<shit> v;
-    v.push_back(shit());
+    using vec = mrsuyi::vector<int>;
+    // default
+    vec dft;
+    // fill
+    vec fill_dft(1);
+    assert(fill_dft == vec({0}));
+    vec fill(3, 1);
+    assert(fill == vec({1, 1, 1}));
+    //// range
+    std::vector<int> src = {1, 2, 3};
+    vec cmp = {1, 2, 3};
+    vec range(src.begin(), src.end());
+    assert(range == cmp);
+    //// copy
+    vec copy(range);
+    assert(copy == range);
+    //// move
+    vec move(std::move(range));
+    assert(move == cmp);
+    // = copy
+    vec oper_copy;
+    oper_copy = copy;
+    assert(oper_copy == copy);
+    // = move
+    vec oper_move;
+    oper_move = (std::move(move));
+    assert(oper_move == cmp);
+    // = init
+    vec oper_il;
+    oper_il = {1, 2, 3};
+    assert(oper_il == cmp);
+}
 
-    std::vector<int> shit = {1, 2, 3};
-    mrsuyi::vector<int> fuck(shit.begin(), shit.end());
-    assert(fuck.size() == shit.size());
+void
+assign()
+{
+    using vec = mrsuyi::vector<int>;
+    vec cmp = {1, 2, 3};
 
-    mrsuyi::vector<int> init_list = {1, 2, 3};
-    assert(init_list.size() == 3);
+    vec v = {1};
+    v.assign(3, 1);
+    assert(v == vec({1, 1, 1}));
+    v.assign(cmp.begin(), cmp.end());
+    assert(v == cmp);
+    v.assign({1, 2, 3});
+    assert(v == cmp);
 }
 
 void
@@ -120,12 +193,15 @@ erase()
 int
 main()
 {
-    iter();
-    mem();
+    mrsuyi::vector<int> basic = {1, 2, 3};
+    assert(basic.size() == 3);
+    assert(basic[0] == 1);
+    assert(basic[1] == 2);
+    assert(basic[2] == 3);
+
+    cmp();
     con_de();
-    emplace();
-    insert();
-    erase();
+    assign();
 
     return 0;
 };
