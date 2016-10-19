@@ -27,6 +27,9 @@ con_de()
     std::vector<int> shit = {1, 2, 3};
     mrsuyi::vector<int> fuck(shit.begin(), shit.end());
     assert(fuck.size() == shit.size());
+
+    mrsuyi::vector<int> init_list = {1, 2, 3};
+    assert(init_list.size() == 3);
 }
 
 void
@@ -101,6 +104,19 @@ iter()
     }
 }
 
+void
+erase()
+{
+    mrsuyi::vector<int> v = {1, 2, 3, 4, 5};
+    auto it = v.erase(v.begin());
+    assert(*it == 2);
+    it = v.erase(it + 1, it + 3);
+    assert(*it == 5);
+    assert(v.size() == 2);
+    assert(v[0] == 2);
+    assert(v[1] == 5);
+}
+
 int
 main()
 {
@@ -109,6 +125,7 @@ main()
     con_de();
     emplace();
     insert();
+    erase();
 
     return 0;
 };

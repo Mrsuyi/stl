@@ -51,7 +51,7 @@ public:
            typename std::enable_if<
                !std::is_integral<InputIterator>::value>::type* = 0);
     // copy
-    explicit vector(const vector& x);
+    vector(const vector& x);
     vector(const vector& x, const allocator_type& alloc);
     // move
     vector(vector&& x);
@@ -62,24 +62,36 @@ public:
     // des
     ~vector() noexcept;
 
+    vector& operator=(const vector& x);
+    vector& operator=(vector&& x);
+    vector& operator=(std::initializer_list<value_type> il);
+
     // mem
+    allocator_type get_allocator() const noexcept;
     void reserve(size_type size);
     void resize(size_type size, value_type val = value_type());
     void clear();
     void shrink_to_fit();
-    size_type capacity() const;
-    size_type size() const;
+    size_type capacity() const noexcept;
+    size_type size() const noexcept;
+    bool empty() const noexcept;
 
     // set
     void push_back(const_reference val);
+    void push_back(value_type&& val);
     void pop_back();
 
-    iterator insert(iterator position, const_reference val);
-    void insert(iterator position, size_type n, const_reference val);
+    iterator insert(const_iterator position, const_reference val);
+    iterator insert(const_iterator position, value_type&& val);
+    void insert(const_iterator position, size_type n, const_reference val);
     template <class InputIterator>
-    void insert(iterator position, InputIterator first, InputIterator last,
+    void insert(const_iterator position, InputIterator first,
+                InputIterator last,
                 typename std::enable_if<
                     !std::is_integral<InputIterator>::value>::type* = 0);
+
+    iterator erase(const_iterator pos);
+    iterator erase(const_iterator first, const_iterator last);
 
     template <class... Args>
     iterator emplace(const_iterator position, Args&&... args);
@@ -95,14 +107,16 @@ public:
     const_reference at(size_type n) const;
     reference operator[](size_type n);
     const_reference operator[](size_type n) const;
+    pointer data() noexcept;
+    const_pointer data() const noexcept;
 
     // iterate
-    iterator begin();
-    iterator end();
-    const_iterator end() const;
-    const_iterator begin() const;
-    const_iterator cbegin() const;
-    const_iterator cend() const;
+    iterator begin() noexcept;
+    iterator end() noexcept;
+    const_iterator end() const noexcept;
+    const_iterator begin() const noexcept;
+    const_iterator cbegin() const noexcept;
+    const_iterator cend() const noexcept;
     // reverse_iterator rbegin();
     // reverse_iterator rend();
     // const_reverse_iterator rbegin() const;
@@ -184,13 +198,53 @@ vector<T, Alloc>::vector(vector&& x, const allocator_type& alloc)
 }
 
 template <class T, class Alloc>
+vector<T, Alloc>::vector(std::initializer_list<value_type> il,
+                         const allocator_type& alloc)
+    : alloc_(alloc)
+{
+    reserve(il.size());
+    for (auto it = il.begin(); it != il.end(); ++it)
+    {
+        alloc_.construct(ptr_ + size_, *it);
+        ++size_;
+    }
+}
+
+template <class T, class Alloc>
 vector<T, Alloc>::~vector() noexcept
 {
     for (size_type i = 0; i < size_; ++i) alloc_.destroy(ptr_ + i);
     alloc_.deallocate(ptr_, capacity_);
 }
 
+template <class T, class Alloc>
+vector<T, Alloc>&
+vector<T, Alloc>::operator=(const vector& x)
+{
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>&
+vector<T, Alloc>::operator=(vector&& x)
+{
+}
+
+template <class T, class Alloc>
+vector<T, Alloc>&
+vector<T, Alloc>::operator=(std::initializer_list<value_type> il)
+{
+    return *this;
+}
+
 //================ mem ===============//
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::allocator_type
+vector<T, Alloc>::get_allocator() const noexcept
+{
+    return alloc_;
+}
+
 template <class T, class Alloc>
 void
 vector<T, Alloc>::realloc(size_type size)
@@ -245,16 +299,23 @@ vector<T, Alloc>::shrink_to_fit()
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::size_type
-vector<T, Alloc>::size() const
+vector<T, Alloc>::size() const noexcept
 {
     return size_;
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::size_type
-vector<T, Alloc>::capacity() const
+vector<T, Alloc>::capacity() const noexcept
 {
     return capacity_;
+}
+
+template <class T, class Alloc>
+bool
+vector<T, Alloc>::empty() const noexcept
+{
+    return size_ == 0;
 }
 
 //================ set ===============//
@@ -269,6 +330,15 @@ vector<T, Alloc>::push_back(const_reference val)
 
 template <class T, class Alloc>
 void
+vector<T, Alloc>::push_back(value_type&& val)
+{
+    if (capacity_ <= size_) realloc(size_ + 1);
+    alloc_.construct(ptr_ + size_, std::move(val));
+    ++size_;
+}
+
+template <class T, class Alloc>
+void
 vector<T, Alloc>::pop_back()
 {
     --size_;
@@ -277,7 +347,7 @@ vector<T, Alloc>::pop_back()
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
-vector<T, Alloc>::insert(iterator position, const_reference val)
+vector<T, Alloc>::insert(const_iterator position, const_reference val)
 {
     difference_type diff = position - ptr_;
     ++size_;
@@ -290,8 +360,23 @@ vector<T, Alloc>::insert(iterator position, const_reference val)
 }
 
 template <class T, class Alloc>
+typename vector<T, Alloc>::iterator
+vector<T, Alloc>::insert(const_iterator position, value_type&& val)
+{
+    difference_type diff = position - ptr_;
+    ++size_;
+    reserve(size_);
+    pointer pos = ptr_ + diff;
+    memmove((void*)(pos + 1), (const void*)(pos),
+            (size_ - (pos - ptr_ + 1)) * sizeof(value_type));
+    alloc_.construct(pos, std::move(val));
+    return pos;
+}
+
+template <class T, class Alloc>
 void
-vector<T, Alloc>::insert(iterator position, size_type n, const_reference val)
+vector<T, Alloc>::insert(const_iterator position, size_type n,
+                         const_reference val)
 {
     difference_type diff = position - ptr_;
     size_ += n;
@@ -306,10 +391,33 @@ template <class T, class Alloc>
 template <class InputIterator>
 void
 vector<T, Alloc>::insert(
-    iterator position, InputIterator first, InputIterator last,
+    const_iterator position, InputIterator first, InputIterator last,
     typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
 {
-    for (; first != last; ++first) position = insert(position, *first) + 1;
+    iterator pos = ptr_ + (position - ptr_);
+    for (; first != last; ++first) pos = insert(pos, *first) + 1;
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::iterator
+vector<T, Alloc>::erase(const_iterator position)
+{
+    alloc_.destroy(position);
+    memmove((void*)position, (const void*)(position + 1),
+            (size_ - (position - ptr_ + 1)) * sizeof(value_type));
+    --size_;
+    return ptr_ + (position - ptr_);
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::iterator
+vector<T, Alloc>::erase(const_iterator first, const_iterator last)
+{
+    for (auto iter = first; iter != last; ++iter) alloc_.destroy(iter);
+    memmove((void*)first, (const void*)last,
+            (size_ - (last - ptr_)) * sizeof(value_type));
+    size_ -= last - first;
+    return ptr_ + (first - ptr_);
 }
 
 template <class T, class Alloc>
@@ -395,45 +503,59 @@ typename vector<T, Alloc>::const_reference vector<T, Alloc>::operator[](
     return *(ptr_ + n);
 }
 
+template <class T, class Alloc>
+typename vector<T, Alloc>::pointer
+vector<T, Alloc>::data() noexcept
+{
+    return ptr_;
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_pointer
+vector<T, Alloc>::data() const noexcept
+{
+    return ptr_;
+}
+
 //============== iterate =============//
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
-vector<T, Alloc>::begin()
+vector<T, Alloc>::begin() noexcept
 {
     return ptr_;
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
-vector<T, Alloc>::end()
+vector<T, Alloc>::end() noexcept
 {
     return ptr_ + size_;
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::const_iterator
-vector<T, Alloc>::begin() const
+vector<T, Alloc>::begin() const noexcept
 {
     return ptr_;
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::const_iterator
-vector<T, Alloc>::end() const
+vector<T, Alloc>::end() const noexcept
 {
     return ptr_ + size_;
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::const_iterator
-vector<T, Alloc>::cbegin() const
+vector<T, Alloc>::cbegin() const noexcept
 {
     return ptr_;
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::const_iterator
-vector<T, Alloc>::cend() const
+vector<T, Alloc>::cend() const noexcept
 {
     return ptr_ + size_;
 }
