@@ -19,18 +19,13 @@ struct shit
     shit(const shit&) { cout << "construct copy\n"; }
     shit(shit&&) { cout << "construct move\n"; }
     ~shit() { cout << "destruct shit\n"; }
-    void*
-    operator new(size_t sz, void*)
+    void* operator new(size_t sz, void*)
     {
         cout << "placement new shit\n";
         return ::operator new(sz);
     }
 
-    void
-    show()
-    {
-        cout << "shit\n";
-    }
+    void show() { cout << "shit\n"; }
 };
 
 void
@@ -106,6 +101,33 @@ assign()
 }
 
 void
+iter()
+{
+    // non-const
+    mrsuyi::vector<int> v(10, 1);
+    int i = 0;
+    for (auto it = v.begin(); it != v.end(); ++it)
+    {
+        assert(*it == 1);
+        *it = ++i;
+    }
+    i = 0;
+    for (auto& val : v)
+    {
+        assert(val == ++i);
+        val *= 2;
+    }
+}
+
+void
+iter_rev()
+{
+    mrsuyi::vector<int> v = {1, 2, 3};
+    auto it = v.rbegin();
+    for (int i = 3; i >= 1; --i, ++it) assert(*it == i);
+}
+
+void
 mem()
 {
     mrsuyi::vector<int> ints;
@@ -159,25 +181,6 @@ emplace()
 }
 
 void
-iter()
-{
-    // non-const
-    mrsuyi::vector<int> v(10, 1);
-    int i = 0;
-    for (auto it = v.begin(); it != v.end(); ++it)
-    {
-        assert(*it == 1);
-        *it = ++i;
-    }
-    i = 0;
-    for (auto& val : v)
-    {
-        assert(val == ++i);
-        val *= 2;
-    }
-}
-
-void
 erase()
 {
     mrsuyi::vector<int> v = {1, 2, 3, 4, 5};
@@ -202,6 +205,8 @@ main()
     cmp();
     con_de();
     assign();
+
+    iter_rev();
 
     return 0;
 };

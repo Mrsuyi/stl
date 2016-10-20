@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include "algorithm.hpp"
+#include "iterator.hpp"
 #include "memory/allocator.hpp"
 
 namespace mrsuyi
@@ -30,8 +31,10 @@ public:
     // iterators
     using iterator = pointer;
     using const_iterator = const_pointer;
+    using reverse_iterator = mrsuyi::reverse_iterator<iterator>;
+    using const_reverse_iterator = mrsuyi::reverse_iterator<const_iterator>;
 
-    // member functions
+    // member-function
 private:
     // ensure capcity_ >= size (size > 0)
     void realloc(size_type size);
@@ -128,12 +131,12 @@ public:
     const_iterator begin() const noexcept;
     const_iterator cbegin() const noexcept;
     const_iterator cend() const noexcept;
-    // reverse_iterator rbegin();
-    // reverse_iterator rend();
-    // const_reverse_iterator rbegin() const;
-    // const_reverse_iterator rend() const;
-    // const_reverse_iterator crbegin() const;
-    // const_reverse_iterator crend() const;
+    reverse_iterator rbegin() noexcept;
+    reverse_iterator rend() noexcept;
+    const_reverse_iterator rbegin() const noexcept;
+    const_reverse_iterator rend() const noexcept;
+    const_reverse_iterator crbegin() const noexcept;
+    const_reverse_iterator crend() const noexcept;
 
     // member-variable
 private:
@@ -263,7 +266,6 @@ vector<T, Alloc>::operator=(std::initializer_list<value_type> il)
 }
 
 //================ mem ===============//
-
 template <class T, class Alloc>
 typename vector<T, Alloc>::allocator_type
 vector<T, Alloc>::get_allocator() const noexcept
@@ -619,7 +621,49 @@ vector<T, Alloc>::cend() const noexcept
     return ptr_ + size_;
 }
 
-//============== iterate =============//
+template <class T, class Alloc>
+typename vector<T, Alloc>::reverse_iterator
+vector<T, Alloc>::rbegin() noexcept
+{
+    return reverse_iterator(end());
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::reverse_iterator
+vector<T, Alloc>::rend() noexcept
+{
+    return reverse_iterator(begin());
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reverse_iterator
+vector<T, Alloc>::rbegin() const noexcept
+{
+    return const_reverse_iterator(end());
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reverse_iterator
+vector<T, Alloc>::rend() const noexcept
+{
+    return const_reverse_iterator(begin());
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reverse_iterator
+vector<T, Alloc>::crbegin() const noexcept
+{
+    return const_reverse_iterator(end());
+}
+
+template <class T, class Alloc>
+typename vector<T, Alloc>::const_reverse_iterator
+vector<T, Alloc>::crend() const noexcept
+{
+    return const_reverse_iterator(begin());
+}
+
+//=========================== non-member functions ===========================//
 template <class T, class Alloc>
 bool
 operator==(const vector<T, Alloc>& lhs, const vector<T>& rhs)
@@ -662,5 +706,12 @@ bool
 operator>=(const vector<T, Alloc>& lhs, const vector<T>& rhs)
 {
     return !(lhs < rhs);
+}
+
+template <class T, class Alloc>
+void
+swap(vector<T, Alloc>& x, vector<T, Alloc>& y)
+{
+    x.swap(y);
 }
 }
