@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
-#include <cstring>
 #include <initializer_list>
 #include <iostream>
 #include <stdexcept>
@@ -67,11 +66,11 @@ public:
     // des
     ~vector() noexcept;
 
-    void swap(vector& x);
-
     vector& operator=(const vector& x);
     vector& operator=(vector&& x);
     vector& operator=(std::initializer_list<value_type> il);
+
+    void swap(vector& x);
 
     // mem
     allocator_type get_allocator() const noexcept;
@@ -146,7 +145,7 @@ private:
     allocator_type alloc_;
 };
 
-// cons & des
+//============ cons & des ============//
 template <class T, class Alloc>
 vector<T, Alloc>::vector() : vector(allocator_type())
 {
