@@ -26,7 +26,6 @@ public:
     using const_pointer = const T*;
     using difference_type = ptrdiff_t;
     using size_type = size_t;
-
     // iterators
     using iterator = pointer;
     using const_iterator = const_pointer;
@@ -70,8 +69,6 @@ public:
     vector& operator=(vector&& x);
     vector& operator=(std::initializer_list<value_type> il);
 
-    void swap(vector& x);
-
     // mem
     allocator_type get_allocator() const noexcept;
     void reserve(size_type size);
@@ -83,6 +80,7 @@ public:
     bool empty() const noexcept;
 
     // set
+    void swap(vector& x);
     template <class InputIterator>
     void assign(InputIterator first, InputIterator last,
                 typename std::enable_if<
@@ -510,28 +508,28 @@ template <class T, class Alloc>
 typename vector<T, Alloc>::reference
 vector<T, Alloc>::front()
 {
-    return *ptr_;
+    return ptr_[0];
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::const_reference
 vector<T, Alloc>::front() const
 {
-    return *ptr_;
+    return ptr_[0];
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::reference
 vector<T, Alloc>::back()
 {
-    return *(ptr_ + size_ - 1);
+    return ptr_[size_ - 1];
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::const_reference
 vector<T, Alloc>::back() const
 {
-    return *(ptr_ + size_ - 1);
+    return ptr_[size_ - 1];
 }
 
 template <class T, class Alloc>
@@ -539,7 +537,7 @@ typename vector<T, Alloc>::reference
 vector<T, Alloc>::at(size_type n)
 {
     if (n >= size_) throw std::out_of_range("out of range");
-    return *(ptr_ + n);
+    return ptr_[n];
 }
 
 template <class T, class Alloc>
@@ -547,20 +545,20 @@ typename vector<T, Alloc>::const_reference
 vector<T, Alloc>::at(size_type n) const
 {
     if (n >= size_) throw std::out_of_range("out of range");
-    return *(ptr_ + n);
+    return ptr_[n];
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::reference vector<T, Alloc>::operator[](size_type n)
 {
-    return *(ptr_ + n);
+    return ptr_[n];
 }
 
 template <class T, class Alloc>
 typename vector<T, Alloc>::const_reference vector<T, Alloc>::operator[](
     size_type n) const
 {
-    return *(ptr_ + n);
+    return ptr_[n];
 }
 
 template <class T, class Alloc>
