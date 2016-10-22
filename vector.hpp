@@ -9,7 +9,7 @@
 
 #include "algorithm.hpp"
 #include "iterator.hpp"
-#include "memory/allocator.hpp"
+#include "memory/memory.hpp"
 
 namespace mrsuyi
 {
@@ -32,7 +32,6 @@ public:
     using reverse_iterator = mrsuyi::reverse_iterator<iterator>;
     using const_reverse_iterator = mrsuyi::reverse_iterator<const_iterator>;
 
-    // member-function
 private:
     // ensure capcity_ >= size (size > 0)
     void realloc(size_type size);
