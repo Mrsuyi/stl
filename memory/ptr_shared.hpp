@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef>
+#include "allocator.hpp"
+#include "default_delete.hpp"
 
 namespace mrsuyi
 {
@@ -12,8 +14,9 @@ class unique_ptr;
 template <class T>
 class shared_ptr
 {
-    template <class U = T, class D = std::, class Alloc>
-    struct control
+    template <class U = T, class D = default_delete<U>,
+              class Alloc = allocator<U>>
+    struct ref_count
     {
         U* managed_;
         int shared_cnt_;
@@ -93,11 +96,11 @@ public:
 
 private:
     T* stored_;
-    control* ctrl_;
+    ref_count ctrl_;
 };
 
 template <class T>
-constexpr shared_ptr<T>::shared_ptr() noexcept : ctrl_(new control())
+constexpr shared_ptr<T>::shared_ptr() noexcept : ctrl_(new control<T>())
 {
 }
 
