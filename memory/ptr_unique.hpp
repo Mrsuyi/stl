@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../utility.hpp"
 #include <type_traits>
+#include "../utility.hpp"
 #include "default_delete.hpp"
 
 namespace mrsuyi
@@ -24,10 +24,9 @@ public:
     // from pointer
     explicit unique_ptr(pointer p) noexcept;
     // from pointer & lvalue-deleter
-    unique_ptr(
-        pointer p,
-        typename std::conditional<std::is_reference<D>::value, D, const D&>::type
-            del) noexcept;
+    unique_ptr(pointer p,
+               typename std::conditional<std::is_reference<D>::value, D,
+                                         const D&>::type del) noexcept;
     // from pointer & rvalue-deleter
     unique_ptr(pointer p,
                typename std::remove_reference<D>::type&& del) noexcept;
@@ -94,10 +93,10 @@ unique_ptr<T, D>::unique_ptr(unique_ptr&& x) noexcept : ptr_(x.release()),
 
 template <class T, class D>
 unique_ptr<T, D>::unique_ptr(
-    pointer p,
-    typename std::conditional<std::is_reference<D>::value, D, const D&>::type
-        del) noexcept : ptr_(p),
-                        del_(del)
+    pointer p, typename std::conditional<std::is_reference<D>::value, D,
+                                         const D&>::type del) noexcept
+    : ptr_(p),
+      del_(del)
 {
 }
 
@@ -198,4 +197,56 @@ unique_ptr<T, D>::swap(unique_ptr& x) noexcept
 }
 
 //============================== array unique-ptr ============================//
+
+//============================ non-member functions ==========================//
+
+template <class T, class D>
+void
+swap(unique_ptr<T, D>& lhs, unique_ptr<T, D>& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
+
+template <class T1, class D1, class T2, class D2>
+bool
+operator==(const unique_ptr<T1, D1>& lhs, const unique_ptr<T2, D2>& rhs)
+{
+    return lhs.get() == rhs.get();
+}
+
+template <class T1, class D1, class T2, class D2>
+bool
+operator!=(const unique_ptr<T1, D1>& lhs, const unique_ptr<T2, D2>& rhs)
+{
+    return lhs.get() != rhs.get();
+}
+
+template <class T1, class D1, class T2, class D2>
+bool
+operator<(const unique_ptr<T1, D1>& lhs, const unique_ptr<T2, D2>& rhs)
+{
+    return lhs.get() < rhs.get();
+}
+
+template <class T1, class D1, class T2, class D2>
+bool
+operator<=(const unique_ptr<T1, D1>& lhs, const unique_ptr<T2, D2>& rhs)
+{
+    return lhs.get() <= rhs.get();
+}
+
+template <class T1, class D1, class T2, class D2>
+bool
+operator>(const unique_ptr<T1, D1>& lhs, const unique_ptr<T2, D2>& rhs)
+{
+    return lhs.get() > rhs.get();
+}
+
+template <class T1, class D1, class T2, class D2>
+bool
+operator>=(const unique_ptr<T1, D1>& lhs, const unique_ptr<T2, D2>& rhs)
+{
+    return lhs.get() >= rhs.get();
+}
+
 }

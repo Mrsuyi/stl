@@ -54,11 +54,24 @@ del()
     mrsuyi::unique_ptr<shit, decltype(lambda)> ptr3(new shit(), lambda);
 }
 
+void cmp()
+{
+    mrsuyi::unique_ptr<int> p1(new int(1));
+    mrsuyi::unique_ptr<int> p2(new int(1));
+    cout << (p1 == p2) << endl;
+    cout << (p1 != p2) << endl;
+    cout << (p1 <  p2) << endl;
+    cout << (p1 <= p2) << endl;
+    cout << (p1 >  p2) << endl;
+    cout << (p1 >= p2) << endl;
+}
+
 int
 main()
 {
     basic();
     del();
+    cmp();
 
     return 0;
 };
