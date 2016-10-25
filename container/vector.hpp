@@ -9,6 +9,7 @@
 
 #include "algorithm.hpp"
 #include "iterator.hpp"
+#include "utility.hpp"
 #include "memory/memory.hpp"
 
 namespace mrsuyi
@@ -195,7 +196,7 @@ vector<T, Alloc>::vector(const vector& x, const allocator_type& alloc)
 }
 
 template <class T, class Alloc>
-vector<T, Alloc>::vector(vector&& x) : vector(std::move(x), allocator_type())
+vector<T, Alloc>::vector(vector&& x) : vector(move(x), allocator_type())
 {
 }
 
@@ -249,7 +250,7 @@ template <class T, class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(vector&& x)
 {
-    vector(std::move(x)).swap(*this);
+    vector(move(x)).swap(*this);
     return *this;
 }
 
@@ -390,7 +391,7 @@ void
 vector<T, Alloc>::push_back(value_type&& val)
 {
     if (capacity_ <= size_) realloc(size_ + 1);
-    alloc_.construct(ptr_ + size_, std::move(val));
+    alloc_.construct(ptr_ + size_, move(val));
     ++size_;
 }
 
@@ -426,7 +427,7 @@ vector<T, Alloc>::insert(const_iterator position, value_type&& val)
     pointer pos = ptr_ + diff;
     memmove((void*)(pos + 1), (const void*)(pos),
             (size_ - (pos - ptr_ + 1)) * sizeof(value_type));
-    alloc_.construct(pos, std::move(val));
+    alloc_.construct(pos, move(val));
     return pos;
 }
 
@@ -488,7 +489,7 @@ vector<T, Alloc>::emplace(const_iterator position, Args&&... args)
     pointer pos = ptr_ + diff;
     memmove((void*)(pos + 1), (const void*)(pos),
             (size_ - (pos - ptr_ + 1)) * sizeof(value_type));
-    alloc_.construct(pos, std::forward<Args>(args)...);
+    alloc_.construct(pos, forward<Args>(args)...);
     return pos;
 }
 
@@ -499,7 +500,7 @@ vector<T, Alloc>::emplace_back(Args&&... args)
 {
     ++size_;
     reserve(size_);
-    alloc_.construct(ptr_ + size_ - 1, std::forward<Args>(args)...);
+    alloc_.construct(ptr_ + size_ - 1, forward<Args>(args)...);
 }
 
 //================ get ===============//

@@ -16,13 +16,13 @@ move(T&& arg) noexcept
 //================================== forward =================================//
 template <class T>
 constexpr T&&
-forward(typename std::remove_reference<T>&& t)
+forward(typename std::remove_reference<T>::type&& t)
 {
     return static_cast<T&&>(t);
 }
 template <class T>
 constexpr T&&
-forward(typename std::remove_reference<T>& t)
+forward(typename std::remove_reference<T>::type& t)
 {
     return static_cast<T&&>(t);
 }

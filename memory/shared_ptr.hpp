@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include "allocator.hpp"
+#include "unique_ptr.hpp"
 #include "default_delete.hpp"
 
 namespace mrsuyi
@@ -14,15 +15,7 @@ class unique_ptr;
 template <class T>
 class shared_ptr
 {
-    template <class U = T, class D = default_delete<U>,
-              class Alloc = allocator<U>>
-    struct ref_count
-    {
-        U* managed_;
-        int shared_cnt_;
-        D deleter_;
-        Alloc alloc_;
-    };
+    class ctrl;
 
 public:
     using element_type = T;
@@ -96,11 +89,11 @@ public:
 
 private:
     T* stored_;
-    ref_count ctrl_;
+    ctrl* ctrl_;
 };
 
 template <class T>
-constexpr shared_ptr<T>::shared_ptr() noexcept : ctrl_(new control<T>())
+constexpr shared_ptr<T>::shared_ptr() noexcept : ctrl_()
 {
 }
 
@@ -113,8 +106,6 @@ template <class T>
 template <class U>
 shared_ptr<T>::shared_ptr(U* p) : shared_ptr(), stored_(p)
 {
-    ctrl_->managed_ = p;
-    ctrl_->shared_cnt_ = 1;
 }
 
 template <class T>
