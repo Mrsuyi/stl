@@ -1,14 +1,16 @@
 #include <iostream>
 #include <utility>
 #include <memory>
+#include <vector>
+#include <type_traits>
 
 using namespace std;
 
 int main()
 {
-    shared_ptr<int> a;
+    vector<int> b;
 
-    a.get();
+    cout << is_trivially_destructible<int>::value << endl;
 
     return 0;
 };

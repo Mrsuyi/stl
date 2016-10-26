@@ -2,14 +2,14 @@
 
 #include <cstddef>
 #include "allocator.hpp"
-#include "unique_ptr.hpp"
 #include "default_delete.hpp"
+#include "unique_ptr.hpp"
 
 namespace mrsuyi
 {
 template <class T>
 class weak_ptr;
-template <class T, class D>
+template <class T, class Del>
 class unique_ptr;
 
 template <class T>
@@ -20,7 +20,7 @@ class shared_ptr
 public:
     using element_type = T;
 
-    // cons & des
+    // ctor & dtor
     // default
     constexpr shared_ptr() noexcept;
     // from null pointer
@@ -28,59 +28,65 @@ public:
     // from pointer
     template <class U>
     explicit shared_ptr(U*);
-    // from deleter
-    template <class U, class D>
-    shared_ptr(U* p, D del);
-    template <class D>
-    shared_ptr(std::nullptr_t, D del);
-    // with allocator
-    template <class U, class D, class Alloc>
-    shared_ptr(U* p, D del, Alloc alloc);
-    template <class D, class Alloc>
-    shared_ptr(std::nullptr_t, D del, Alloc alloc);
+    // frometer
+    template <class U, class Del>
+    shared_ptr(U*, Del);
+    template <class Del>
+    shared_ptr(std::nullptr_t, Del);
+    // withator
+    template <class U, class Del, class Alloc>
+    shared_ptr(U* p, Del, Alloc);
+    template <class Del, class Alloc>
+    shared_ptr(std::nullptr_t, Del, Alloc);
     // copy
-    shared_ptr(const shared_ptr& x) noexcept;
+    shared_ptr(const shared_ptr&) noexcept;
     template <class U>
-    shared_ptr(const shared_ptr<U>& x) noexcept;
+    shared_ptr(const shared_ptr<U>&) noexcept;
     // copy from wek
     template <class U>
-    shared_ptr(const weak_ptr<U>& x);
+    shared_ptr(const weak_ptr<U>&);
     // move
-    shared_ptr(shared_ptr&& x) noexcept;
+    shared_ptr(shared_ptr&&) noexcept;
     template <class U>
-    shared_ptr(shared_ptr<U>&& x) noexcept;
+    shared_ptr(shared_ptr<U>&&) noexcept;
     // move from unique
-    template <class U, class D>
-    shared_ptr(unique_ptr<U, D>&& x);
+    template <class U, class Del>
+    shared_ptr(unique_ptr<U, Del>&&);
+    // alias
+    template <class U>
+    shared_ptr(const shared_ptr<U>&, element_type*) noexcept;
 
     ~shared_ptr();
 
     // copy =
-    shared_ptr& operator=(const shared_ptr& x) noexcept;
+    shared_ptr& operator=(const shared_ptr&) noexcept;
     template <class U>
-    shared_ptr& operator=(const shared_ptr<U>& x) noexcept;
+    shared_ptr& operator=(const shared_ptr<U>&) noexcept;
     // move =
-    shared_ptr& operator=(shared_ptr&& x) noexcept;
+    shared_ptr& operator=(shared_ptr&&) noexcept;
     template <class U>
-    shared_ptr& operator=(shared_ptr<U>&& x) noexcept;
-    template <class U, class D>
-    shared_ptr& operator=(unique_ptr<U, D>&& x);
+    shared_ptr& operator=(shared_ptr<U>&&) noexcept;
+    template <class U, class Del>
+    shared_ptr& operator=(unique_ptr<U, Del>&&);
 
+    void swap(shared_ptr&) noexcept;
+
+    // get
     T* get() const noexcept;
     T& operator*() const noexcept;
     T* operator->() const noexcept;
 
     long use_count() const noexcept;
     bool unique() const noexcept;
-    void swap(shared_ptr& x) noexcept;
 
+    // set
     void reset() noexcept;
     template <class U>
     void reset(U* p);
-    template <class U, class D>
-    void reset(U* p, D del);
-    template <class U, class D, class Alloc>
-    void reset(U* p, D del, Alloc alloc);
+    template <class U, class Del>
+    void reset(U* p, Del del);
+    template <class U, class Del, class Alloc>
+    void reset(U* p, Del del, Alloc alloc);
 
     template <class U>
     bool owner_before(const shared_ptr<U>& x) const;
@@ -93,27 +99,164 @@ private:
 };
 
 template <class T>
-constexpr shared_ptr<T>::shared_ptr() noexcept : ctrl_()
+class shared_ptr<T>::ctrl
+{
+    struct base
+    {
+        virtual ~base() {}
+        virtual void del(T*) = 0;
+    };
+
+    template <class Deleter, class Alloc>
+    struct inherit : base
+    {
+        inherit(Deleter del, Alloc alloc) : del_(del), alloc_(alloc) {}
+        virtual ~inherit() {}
+        virtual void del(T* t) override { del_(t); }
+        Deleter del_;
+        Alloc alloc_;
+    };
+
+private:
+    base* base_;
+
+public:
+    template <class Deleter = default_delete<T>, class Alloc = allocator<T>>
+    ctrl(T* ptr = nullptr, Deleter del = Deleter(), Alloc alloc = Alloc())
+        : managed(ptr),
+          shared(0),
+          weak(0),
+          base_(new inherit<Deleter, Alloc>(del, alloc))
+    {
+    }
+    ~ctrl()
+    {
+        base_->del(managed);
+        delete base_;
+    }
+
+public:
+    T* managed;
+    int shared;
+    int weak;
+};
+
+//================================= ctor & dtor ==============================//
+// default
+template <class T>
+constexpr shared_ptr<T>::shared_ptr() noexcept : stored_(nullptr),
+                                                 ctrl_(new ctrl())
 {
 }
-
 template <class T>
 constexpr shared_ptr<T>::shared_ptr(std::nullptr_t) : shared_ptr()
 {
 }
+// from pointer
+template <class T>
+template <class U>
+shared_ptr<T>::shared_ptr(U* p) : stored_(p), ctrl_(new ctrl(p))
+{
+    ctrl_->shared = 1;
+}
+// from deleter
+template <class T>
+template <class U, class Del>
+shared_ptr<T>::shared_ptr(U* p, Del del) : stored_(p), ctrl_(new ctrl(p, del))
+{
+    ctrl_->shared = 1;
+}
+template <class T>
+template <class Del>
+shared_ptr<T>::shared_ptr(std::nullptr_t, Del del)
+    : stored_(nullptr), ctrl(new ctrl(nullptr, del))
+{
+}
+// with allocator
+template <class T>
+template <class U, class Del, class Alloc>
+shared_ptr<T>::shared_ptr(U* p, Del del, Alloc alloc)
+    : stored_(p), ctrl_(new ctrl(p, del, alloc))
+{
+    ctrl_->shared = 1;
+}
+template <class T>
+template <class Del, class Alloc>
+shared_ptr<T>::shared_ptr(std::nullptr_t, Del del, Alloc alloc)
+    : stored_(del), ctrl_(new ctrl(nullptr, del, alloc))
+{
+}
+// copy
+template <class T>
+shared_ptr<T>::shared_ptr(const shared_ptr& x) noexcept : stored_(x.stored_),
+                                                          ctrl_(x.ctrl_)
+{
+    ++(ctrl_->shared);
+}
+template <class T>
+template <class U>
+shared_ptr<T>::shared_ptr(const shared_ptr<U>&) noexcept
+{
+}
+// copy from weak
+
+// move
+
+// move from unique
+
+// alias
+template <class T>
+template <class U>
+shared_ptr<T>::shared_ptr(const shared_ptr<U>& x, element_type* p) noexcept
+    : stored_(p),
+      ctrl_(x.ctrl_)
+{
+    ++(ctrl_->shared);
+}
+
+template <class T>
+shared_ptr<T>::~shared_ptr()
+{
+    --(ctrl_->shared);
+    if (ctrl_->shared == 0) delete ctrl_;
+}
+
+//================================= assignment ===============================//
+// copy
+template <class T>
+shared_ptr<T>&
+shared_ptr<T>::operator=(const shared_ptr& x) noexcept
+{
+    shared_ptr<T>(x).swap(*this);
+    return *this;
+}
 
 template <class T>
 template <class U>
-shared_ptr<T>::shared_ptr(U* p) : shared_ptr(), stored_(p)
+shared_ptr<T>&
+shared_ptr<T>::operator=(const shared_ptr<U>& x) noexcept
 {
+    shared_ptr<T>(x) > swap(*this);
+    return *this;
+}
+template <class T>
+template <class U, class Del>
+shared_ptr<T>&
+shared_ptr<T>::operator=(unique_ptr<U, Del>&& x)
+{
+    shared_ptr<T>(x).swap(*this);
+    return *this;
 }
 
 template <class T>
-template <class U, class D>
-shared_ptr<T>::shared_ptr(U* p, D del) : shared_ptr(p)
+void
+shared_ptr<T>::swap(shared_ptr& x) noexcept
 {
+    std::swap(stored_, x.stored_);
+    std::swap(ctrl_, x.ctrl_);
 }
 
+//===================================== get ==================================//
 template <class T>
 T*
 shared_ptr<T>::get() const noexcept
@@ -131,5 +274,59 @@ template <class T>
 T* shared_ptr<T>::operator->() const noexcept
 {
     return stored_;
+}
+
+template <class T>
+long
+shared_ptr<T>::use_count() const noexcept
+{
+    return ctrl_->shared;
+}
+
+template <class T>
+bool
+shared_ptr<T>::unique() const noexcept
+{
+    return ctrl_->shared == 1;
+}
+
+//===================================== set ==================================//
+template <class T>
+void
+shared_ptr<T>::reset() noexcept
+{
+    shared_ptr<T>().swap(*this);
+}
+
+template <class T>
+template <class U>
+void
+shared_ptr<T>::reset(U* p)
+{
+    shared_ptr<T>(p).swap(*this);
+}
+
+template <class T>
+template <class U, class Del>
+void
+shared_ptr<T>::reset(U* p, Del del)
+{
+    shared_ptr<T>(p, del).swap(*this);
+}
+
+template <class T>
+template <class U, class Del, class Alloc>
+void
+shared_ptr<T>::reset(U* p, Del del, Alloc alloc)
+{
+    shared_ptr<T>(p, del, alloc).swap(*this);
+}
+
+template <class T>
+template <class U>
+bool
+shared_ptr<T>::owner_before(const shared_ptr<U>& x) const
+{
+    return ctrl_->managed < x.ctrl_->managed;
 }
 }
