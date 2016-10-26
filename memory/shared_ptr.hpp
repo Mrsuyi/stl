@@ -28,12 +28,12 @@ public:
     // from pointer
     template <class U>
     explicit shared_ptr(U*);
-    // frometer
+    // from deleter
     template <class U, class Del>
     shared_ptr(U*, Del);
     template <class Del>
     shared_ptr(std::nullptr_t, Del);
-    // withator
+    // with deleter and allocator
     template <class U, class Del, class Alloc>
     shared_ptr(U* p, Del, Alloc);
     template <class Del, class Alloc>
@@ -124,7 +124,7 @@ public:
     template <class Deleter = default_delete<T>, class Alloc = allocator<T>>
     ctrl(T* ptr = nullptr, Deleter del = Deleter(), Alloc alloc = Alloc())
         : managed(ptr),
-          shared(0),
+          shared(1),
           weak(0),
           base_(new inherit<Deleter, Alloc>(del, alloc))
     {
@@ -157,14 +157,12 @@ template <class T>
 template <class U>
 shared_ptr<T>::shared_ptr(U* p) : stored_(p), ctrl_(new ctrl(p))
 {
-    ctrl_->shared = 1;
 }
 // from deleter
 template <class T>
 template <class U, class Del>
 shared_ptr<T>::shared_ptr(U* p, Del del) : stored_(p), ctrl_(new ctrl(p, del))
 {
-    ctrl_->shared = 1;
 }
 template <class T>
 template <class Del>
@@ -172,7 +170,7 @@ shared_ptr<T>::shared_ptr(std::nullptr_t, Del del)
     : stored_(nullptr), ctrl(new ctrl(nullptr, del))
 {
 }
-// with allocator
+// with deleter and allocator
 template <class T>
 template <class U, class Del, class Alloc>
 shared_ptr<T>::shared_ptr(U* p, Del del, Alloc alloc)
@@ -195,15 +193,35 @@ shared_ptr<T>::shared_ptr(const shared_ptr& x) noexcept : stored_(x.stored_),
 }
 template <class T>
 template <class U>
-shared_ptr<T>::shared_ptr(const shared_ptr<U>&) noexcept
+shared_ptr<T>::shared_ptr(const shared_ptr<U>& x) noexcept : stored_(x.ptr_),
+                                                             ctrl_(x.ctrl_)
 {
+    ++(ctrl_->shared);
 }
 // copy from weak
 
 // move
-
+template <class T>
+shared_ptr<T>::shared_ptr(shared_ptr&& x) noexcept : stored_(x.stored_),
+                                                     ctrl_(x.ctrl_)
+{
+    x.ctrl_ = new ctrl();
+}
+template <class T>
+template <class U>
+shared_ptr<T>::shared_ptr(shared_ptr<U>&& x) noexcept : stored_(x.stored_),
+                                                        ctrl_(x.ctrl_)
+{
+    x.ctrl_ = new ctrl();
+}
 // move from unique
-
+template <class T>
+template <class U, class Del>
+shared_ptr<T>::shared_ptr(unique_ptr<U, Del>&& x)
+    : stored_(x.get()), ctrl_(new ctrl(x.get(), move(x.get_deleter())))
+{
+    x.release();
+}
 // alias
 template <class T>
 template <class U>
@@ -297,7 +315,6 @@ shared_ptr<T>::reset() noexcept
 {
     shared_ptr<T>().swap(*this);
 }
-
 template <class T>
 template <class U>
 void
@@ -328,5 +345,141 @@ bool
 shared_ptr<T>::owner_before(const shared_ptr<U>& x) const
 {
     return ctrl_->managed < x.ctrl_->managed;
+}
+
+//============================ non-member functions ==========================//
+template <class T>
+void
+swap(shared_ptr<T>& lhs, shared_ptr<T>& rhs) noexcept
+{
+    lhs.swap(rhs);
+}
+
+template <class T>
+bool
+operator==(const shared_ptr<T>& lhs, const shared_ptr<T>& rhs) noexcept
+{
+    return lhs.get() == rhs.get();
+}
+
+template <class T>
+bool
+operator!=(const shared_ptr<T>& lhs, const shared_ptr<T>& rhs) noexcept
+
+{
+    return lhs.get() != rhs.get();
+}
+
+template <class T>
+bool
+operator<(const shared_ptr<T>& lhs, const shared_ptr<T>& rhs) noexcept
+
+{
+    return lhs.get() < rhs.get();
+}
+
+template <class T>
+bool
+operator<=(const shared_ptr<T>& lhs, const shared_ptr<T>& rhs) noexcept
+{
+    return lhs.get() <= rhs.get();
+}
+
+template <class T>
+bool
+operator>(const shared_ptr<T>& lhs, const shared_ptr<T>& rhs) noexcept
+{
+    return lhs.get() > rhs.get();
+}
+
+template <class T>
+bool
+operator>=(const shared_ptr<T>& lhs, const shared_ptr<T>& rhs) noexcept
+{
+    return lhs.get() >= rhs.get();
+}
+
+template <class T>
+bool
+operator==(std::nullptr_t, const shared_ptr<T>& rhs) noexcept
+{
+    return nullptr == rhs.get();
+}
+
+template <class T>
+bool
+operator!=(std::nullptr_t, const shared_ptr<T>& rhs) noexcept
+{
+    return nullptr != rhs.get();
+}
+
+template <class T>
+bool
+operator<(std::nullptr_t, const shared_ptr<T>& rhs) noexcept
+{
+    return nullptr < rhs.get();
+}
+
+template <class T>
+bool
+operator<=(std::nullptr_t, const shared_ptr<T>& rhs) noexcept
+{
+    return nullptr <= rhs.get();
+}
+
+template <class T>
+bool
+operator>(std::nullptr_t, const shared_ptr<T>& rhs) noexcept
+{
+    return nullptr > rhs.get();
+}
+
+template <class T>
+bool
+operator>=(std::nullptr_t, const shared_ptr<T>& rhs) noexcept
+{
+    return nullptr >= rhs.get();
+}
+
+template <class T>
+bool
+operator==(const shared_ptr<T>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() == nullptr;
+}
+
+template <class T>
+bool
+operator!=(const shared_ptr<T>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() != nullptr;
+}
+
+template <class T>
+bool
+operator<(const shared_ptr<T>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() < nullptr;
+}
+
+template <class T>
+bool
+operator<=(const shared_ptr<T>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() <= nullptr;
+}
+
+template <class T>
+bool
+operator>(const shared_ptr<T>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() > nullptr;
+}
+
+template <class T>
+bool
+operator>=(const shared_ptr<T>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() >= nullptr;
 }
 }

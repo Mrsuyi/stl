@@ -249,4 +249,88 @@ operator>=(const unique_ptr<T1, D1>& lhs, const unique_ptr<T2, D2>& rhs)
     return lhs.get() >= rhs.get();
 }
 
+template <class T, class D>
+bool
+operator==(std::nullptr_t, const unique_ptr<T, D>& rhs) noexcept
+{
+    return nullptr == rhs.get();
+}
+
+template <class T, class D>
+bool
+operator!=(std::nullptr_t, const unique_ptr<T, D>& rhs) noexcept
+{
+    return nullptr != rhs.get();
+}
+
+template <class T, class D>
+bool
+operator<(std::nullptr_t, const unique_ptr<T, D>& rhs) noexcept
+{
+    return nullptr < rhs.get();
+}
+
+template <class T, class D>
+bool
+operator<=(std::nullptr_t, const unique_ptr<T, D>& rhs) noexcept
+{
+    return nullptr <= rhs.get();
+}
+
+template <class T, class D>
+bool
+operator>(std::nullptr_t, const unique_ptr<T, D>& rhs) noexcept
+{
+    return nullptr > rhs.get();
+}
+
+template <class T, class D>
+bool
+operator>=(std::nullptr_t, const unique_ptr<T, D>& rhs) noexcept
+{
+    return nullptr >= rhs.get();
+}
+
+template <class T, class D>
+bool
+operator==(const unique_ptr<T, D>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() == nullptr;
+}
+
+template <class T, class D>
+bool
+operator!=(const unique_ptr<T, D>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() != nullptr;
+}
+
+template <class T, class D>
+bool
+operator<(const unique_ptr<T, D>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() < nullptr;
+}
+
+template <class T, class D>
+bool
+operator<=(const unique_ptr<T, D>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() <= nullptr;
+}
+
+template <class T, class D>
+bool
+operator>(const unique_ptr<T, D>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() > nullptr;
+}
+
+template <class T, class D>
+bool
+operator>=(const unique_ptr<T, D>& lhs, std::nullptr_t) noexcept
+{
+    return lhs.get() >= nullptr;
+}
+
 }
