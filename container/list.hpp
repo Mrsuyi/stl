@@ -13,10 +13,18 @@
 
 namespace mrsuyi
 {
-template <class T, class Alloc = allocator<T>>
+template <class T, template <class> class Alloc = allocator>
 class list
 {
-    class node;
+    struct node
+    {
+        node *pre, *nxt;
+        T t;
+
+        node() : pre(this), nxt(this) {}
+        node(const T& t) : pre(this), nxt(this), t(t) {}
+        node(T&& t) : pre(this), nxt(this), t(std::move(t)) {}
+    };
 
     template <class E>
     class iter;
@@ -24,7 +32,7 @@ class list
     // typedefs
 public:
     using value_type = T;
-    using allocator_type = Alloc;
+    using allocator_type = Alloc<node>;
     using reference = T&;
     using const_reference = const T&;
     using pointer = T*;
@@ -40,7 +48,7 @@ public:
 
     // member-function
 public:
-    // cons & des
+    // ctor & dtor
     // default
     list();
     explicit list(const allocator_type& alloc);
@@ -118,12 +126,6 @@ public:
     const_reference front() const;
     reference back();
     const_reference back() const;
-    reference at(size_type n);
-    const_reference at(size_type n) const;
-    reference operator[](size_type n);
-    const_reference operator[](size_type n) const;
-    pointer data() noexcept;
-    const_pointer data() const noexcept;
 
     // iterate
     iterator begin() noexcept;
@@ -142,72 +144,144 @@ public:
     // member-variable
 private:
     allocator_type alloc_;
-    node* bgn_;
-    node* end_;
+    node* ptr_;
 };
 
-//============ cons & des ============//
-template <class T, class Alloc>
-list<T, Alloc>::list() : list(allocator_type())
-{
-}
-
-template <class T, class Alloc>
-list<T, Alloc>::list(const allocator_type& alloc) : alloc_(alloc)
-{
-}
-
-template <class T, class Alloc>
-list<T, Alloc>::~list() noexcept
-{
-}
-
-template <class T, class Alloc>
-typename list<T, Alloc>::iterator
-list<T, Alloc>::begin() noexcept
-{
-    return iterator(bgn_);
-}
-
-//==================================== Node ==================================//
-template <class T, class Alloc>
-class list<T, Alloc>::node
-{
-    node *pre, *nxt;
-    T element;
-};
-
-//================================== Iterator ================================//
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 template <class E>
 class list<T, Alloc>::iter
 {
-    friend class list<T, Alloc>;
-
 public:
-    iter(node*);
-    iter(const iter&);
-
-    iter& operator=(const iter&);
-
-    E& operator*() const;
-    E* operator->() const;
-
-    bool operator==(const iter&);
-    bool operator!=(const iter&);
-
-    iter& operator++();
-    iter operator++(int);
-    iter& operator--();
-    iter operator--(int);
+    iter(node* ptr) : ptr_(ptr) {}
+    iter(const iter& it) : ptr_(it.ptr_) {}
+    iter& operator=(const iter& it) { ptr_ = it.ptr_; }
+    E& operator*() const { return ptr_->t; }
+    E* operator->() const { return &(ptr_->t); }
+    bool operator==(const iter& it) { return ptr_ == it.ptr_; }
+    bool operator!=(const iter& it) { return ptr_ != it.ptr_; }
+    iter& operator++()
+    {
+        ptr_ = ptr_->nxt;
+        return *this;
+    }
+    iter operator++(int)
+    {
+        auto res = ptr_;
+        ptr_ = ptr_->nxt;
+        return res;
+    }
+    iter& operator--()
+    {
+        ptr_ = ptr_->pre;
+        return *this;
+    }
+    iter operator--(int)
+    {
+        auto res = ptr_;
+        ptr_ = ptr_->pre;
+        return res;
+    }
 
 private:
     node* ptr_;
 };
 
-template <class T, class Alloc>
-template <class E>
-list<T, Alloc>::iter<E>::iter(node* ptr) : ptr_(ptr)
+//============ cons & des ============//
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list() : ptr_(new node()), alloc_(allocator_type())
 {
 }
+
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list(const allocator_type& alloc) : alloc_(alloc)
+{
+}
+
+template <class T, template <class> class Alloc>
+list<T, Alloc>::~list() noexcept
+{
+    auto ptr = ptr_;
+    do
+    {
+        auto tmp = ptr;
+        ptr = ptr->nxt;
+        delete tmp;
+    } while (ptr != ptr_);
+}
+
+// set
+template <class T, template <class> class Alloc>
+void
+list<T, Alloc>::push_back(const T& val)
+{
+    auto tail = new node(val);
+    tail->pre = ptr_->pre;
+    tail->nxt = ptr_;
+    ptr_->pre->nxt = tail;
+    ptr_->pre = tail;
+}
+
+template <class T, template <class> class Alloc>
+void
+list<T, Alloc>::push_back(T&& val)
+{
+    auto tail = new node(std::move(val));
+    tail->pre = ptr_->pre;
+    tail->nxt = ptr_;
+    ptr_->pre->nxt = tail;
+    ptr_->pre = tail;
+}
+
+template <class T, template <class> class Alloc>
+void
+list<T, Alloc>::pop_back()
+{
+    auto old_tail = ptr_->pre;
+    auto new_tail = old_tail->pre;
+    new_tail->nxt = ptr_;
+    ptr_->pre = new_tail;
+    delete old_tail;
+}
+
+// iterate
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::iterator
+list<T, Alloc>::begin() noexcept
+{
+    return iterator(ptr_->nxt);
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::iterator
+list<T, Alloc>::end() noexcept
+{
+    return iterator(ptr_);
+}
+
+// get
+template <class T, template <class> class Alloc>
+T&
+list<T, Alloc>::front()
+{
+    return *(this->begin());
+}
+template <class T, template <class> class Alloc>
+const T&
+list<T, Alloc>::front() const
+{
+    return *(this->begin());
+}
+template <class T, template <class> class Alloc>
+T&
+list<T, Alloc>::back()
+{
+    return *(this->end());
+}
+template <class T, template <class> class Alloc>
+const T&
+list<T, Alloc>::back() const
+{
+    return *(this->end());
+}
+
 }

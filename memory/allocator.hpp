@@ -36,6 +36,9 @@ public:
     using const_reference = const T&;
     using size_type = size_t;
     using difference_type = ptrdiff_t;
+    
+    template <class U>
+    using rebind = allocator<U>;
 
     // cons & des
     allocator() noexcept;

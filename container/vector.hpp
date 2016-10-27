@@ -9,18 +9,18 @@
 
 #include "algorithm.hpp"
 #include "iterator.hpp"
-#include "utility.hpp"
 #include "memory/memory.hpp"
+#include "utility.hpp"
 
 namespace mrsuyi
 {
-template <class T, class Alloc = allocator<T>>
+template <class T, template <class> class Alloc = allocator>
 class vector
 {
     // typedefs
 public:
     using value_type = T;
-    using allocator_type = Alloc;
+    using allocator_type = Alloc<T>;
     using reference = T&;
     using const_reference = const T&;
     using pointer = T*;
@@ -144,23 +144,23 @@ private:
 };
 
 //============ cons & des ============//
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector() : vector(allocator_type())
 {
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(const allocator_type& alloc) : alloc_(alloc)
 {
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(size_type n, const allocator_type& alloc)
     : vector(n, value_type(), alloc)
 {
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(size_type n, const_reference val,
                          const allocator_type& alloc)
     : alloc_(alloc)
@@ -170,7 +170,7 @@ vector<T, Alloc>::vector(size_type n, const_reference val,
     size_ = n;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 template <class InputIterator>
 vector<T, Alloc>::vector(
     InputIterator first, InputIterator last, const allocator_type& alloc,
@@ -180,12 +180,12 @@ vector<T, Alloc>::vector(
     for (; first != last; ++first) push_back(*first);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(const vector& x) : vector(x, allocator_type())
 {
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(const vector& x, const allocator_type& alloc)
     : alloc_(alloc)
 {
@@ -195,12 +195,12 @@ vector<T, Alloc>::vector(const vector& x, const allocator_type& alloc)
         alloc_.construct(ptr_ + i, *(x.ptr_ + i));
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(vector&& x) : vector(move(x), allocator_type())
 {
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(vector&& x, const allocator_type& alloc)
     : alloc_(alloc)
 {
@@ -209,7 +209,7 @@ vector<T, Alloc>::vector(vector&& x, const allocator_type& alloc)
     capacity_ = x.capacity_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(std::initializer_list<value_type> il,
                          const allocator_type& alloc)
     : alloc_(alloc)
@@ -222,14 +222,14 @@ vector<T, Alloc>::vector(std::initializer_list<value_type> il,
     }
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>::~vector() noexcept
 {
     for (size_type i = 0; i < size_; ++i) alloc_.destroy(ptr_ + i);
     alloc_.deallocate(ptr_, capacity_);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::swap(vector& x)
 {
@@ -238,7 +238,7 @@ vector<T, Alloc>::swap(vector& x)
     std::swap(capacity_, x.capacity_);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(const vector& x)
 {
@@ -246,7 +246,7 @@ vector<T, Alloc>::operator=(const vector& x)
     return *this;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(vector&& x)
 {
@@ -254,7 +254,7 @@ vector<T, Alloc>::operator=(vector&& x)
     return *this;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(std::initializer_list<value_type> il)
 {
@@ -263,14 +263,14 @@ vector<T, Alloc>::operator=(std::initializer_list<value_type> il)
 }
 
 //================ mem ===============//
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::allocator_type
 vector<T, Alloc>::get_allocator() const noexcept
 {
     return alloc_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::realloc(size_type size)
 {
@@ -280,7 +280,7 @@ vector<T, Alloc>::realloc(size_type size)
     ptr_ = alloc_.allocate(capacity_, ptr_);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::resize(size_type size, value_type val)
 {
@@ -297,14 +297,14 @@ vector<T, Alloc>::resize(size_type size, value_type val)
     size_ = size;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::reserve(size_type size)
 {
     if (size > capacity_) realloc(size);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::clear()
 {
@@ -312,7 +312,7 @@ vector<T, Alloc>::clear()
     size_ = 0;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::shrink_to_fit()
 {
@@ -322,21 +322,21 @@ vector<T, Alloc>::shrink_to_fit()
         realloc(size_);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::size_type
 vector<T, Alloc>::size() const noexcept
 {
     return size_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::size_type
 vector<T, Alloc>::capacity() const noexcept
 {
     return capacity_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 bool
 vector<T, Alloc>::empty() const noexcept
 {
@@ -344,7 +344,7 @@ vector<T, Alloc>::empty() const noexcept
 }
 
 //================ set ===============//
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 template <class InputIterator>
 void
 vector<T, Alloc>::assign(
@@ -355,7 +355,7 @@ vector<T, Alloc>::assign(
     for (; first != last; ++first) push_back(*first);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::assign(size_type n, const_reference val)
 {
@@ -364,7 +364,7 @@ vector<T, Alloc>::assign(size_type n, const_reference val)
     size_ = n;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::assign(std::initializer_list<value_type> il)
 {
@@ -377,7 +377,7 @@ vector<T, Alloc>::assign(std::initializer_list<value_type> il)
     }
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::push_back(const_reference val)
 {
@@ -386,7 +386,7 @@ vector<T, Alloc>::push_back(const_reference val)
     ++size_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::push_back(value_type&& val)
 {
@@ -395,7 +395,7 @@ vector<T, Alloc>::push_back(value_type&& val)
     ++size_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::pop_back()
 {
@@ -403,7 +403,7 @@ vector<T, Alloc>::pop_back()
     alloc_.destroy(ptr_ + size_);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::insert(const_iterator position, const_reference val)
 {
@@ -417,7 +417,7 @@ vector<T, Alloc>::insert(const_iterator position, const_reference val)
     return pos;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::insert(const_iterator position, value_type&& val)
 {
@@ -431,7 +431,7 @@ vector<T, Alloc>::insert(const_iterator position, value_type&& val)
     return pos;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 vector<T, Alloc>::insert(const_iterator position, size_type n,
                          const_reference val)
@@ -445,7 +445,7 @@ vector<T, Alloc>::insert(const_iterator position, size_type n,
     for (size_type i = 0; i < n; ++i) alloc_.construct(pos + i, val);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 template <class InputIterator>
 void
 vector<T, Alloc>::insert(
@@ -456,7 +456,7 @@ vector<T, Alloc>::insert(
     for (; first != last; ++first) pos = insert(pos, *first) + 1;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::erase(const_iterator position)
 {
@@ -467,7 +467,7 @@ vector<T, Alloc>::erase(const_iterator position)
     return ptr_ + (position - ptr_);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::erase(const_iterator first, const_iterator last)
 {
@@ -478,7 +478,7 @@ vector<T, Alloc>::erase(const_iterator first, const_iterator last)
     return ptr_ + (first - ptr_);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 template <class... Args>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::emplace(const_iterator position, Args&&... args)
@@ -493,7 +493,7 @@ vector<T, Alloc>::emplace(const_iterator position, Args&&... args)
     return pos;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 template <class... Args>
 void
 vector<T, Alloc>::emplace_back(Args&&... args)
@@ -504,35 +504,35 @@ vector<T, Alloc>::emplace_back(Args&&... args)
 }
 
 //================ get ===============//
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::reference
 vector<T, Alloc>::front()
 {
     return ptr_[0];
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_reference
 vector<T, Alloc>::front() const
 {
     return ptr_[0];
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::reference
 vector<T, Alloc>::back()
 {
     return ptr_[size_ - 1];
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_reference
 vector<T, Alloc>::back() const
 {
     return ptr_[size_ - 1];
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::reference
 vector<T, Alloc>::at(size_type n)
 {
@@ -540,7 +540,7 @@ vector<T, Alloc>::at(size_type n)
     return ptr_[n];
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_reference
 vector<T, Alloc>::at(size_type n) const
 {
@@ -548,27 +548,27 @@ vector<T, Alloc>::at(size_type n) const
     return ptr_[n];
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::reference vector<T, Alloc>::operator[](size_type n)
 {
     return ptr_[n];
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_reference vector<T, Alloc>::operator[](
     size_type n) const
 {
     return ptr_[n];
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::pointer
 vector<T, Alloc>::data() noexcept
 {
     return ptr_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_pointer
 vector<T, Alloc>::data() const noexcept
 {
@@ -576,84 +576,84 @@ vector<T, Alloc>::data() const noexcept
 }
 
 //============== iterate =============//
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::begin() noexcept
 {
     return ptr_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::end() noexcept
 {
     return ptr_ + size_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_iterator
 vector<T, Alloc>::begin() const noexcept
 {
     return ptr_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_iterator
 vector<T, Alloc>::end() const noexcept
 {
     return ptr_ + size_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_iterator
 vector<T, Alloc>::cbegin() const noexcept
 {
     return ptr_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_iterator
 vector<T, Alloc>::cend() const noexcept
 {
     return ptr_ + size_;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::reverse_iterator
 vector<T, Alloc>::rbegin() noexcept
 {
     return reverse_iterator(end());
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::reverse_iterator
 vector<T, Alloc>::rend() noexcept
 {
     return reverse_iterator(begin());
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_reverse_iterator
 vector<T, Alloc>::rbegin() const noexcept
 {
     return const_reverse_iterator(end());
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_reverse_iterator
 vector<T, Alloc>::rend() const noexcept
 {
     return const_reverse_iterator(begin());
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_reverse_iterator
 vector<T, Alloc>::crbegin() const noexcept
 {
     return const_reverse_iterator(end());
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 typename vector<T, Alloc>::const_reverse_iterator
 vector<T, Alloc>::crend() const noexcept
 {
@@ -661,7 +661,7 @@ vector<T, Alloc>::crend() const noexcept
 }
 
 //=========================== non-member functions ===========================//
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 bool
 operator==(const vector<T, Alloc>& lhs, const vector<T>& rhs)
 {
@@ -669,14 +669,14 @@ operator==(const vector<T, Alloc>& lhs, const vector<T>& rhs)
            equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 bool
 operator!=(const vector<T, Alloc>& lhs, const vector<T>& rhs)
 {
     return !(lhs == rhs);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 bool
 operator<(const vector<T, Alloc>& lhs, const vector<T>& rhs)
 {
@@ -684,28 +684,28 @@ operator<(const vector<T, Alloc>& lhs, const vector<T>& rhs)
                                    rhs.end());
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 bool
 operator<=(const vector<T, Alloc>& lhs, const vector<T>& rhs)
 {
     return !(rhs < lhs);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 bool
 operator>(const vector<T, Alloc>& lhs, const vector<T>& rhs)
 {
     return rhs < lhs;
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 bool
 operator>=(const vector<T, Alloc>& lhs, const vector<T>& rhs)
 {
     return !(lhs < rhs);
 }
 
-template <class T, class Alloc>
+template <class T, template <class> class Alloc>
 void
 swap(vector<T, Alloc>& x, vector<T, Alloc>& y)
 {

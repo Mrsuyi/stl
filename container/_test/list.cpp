@@ -1,13 +1,20 @@
 #include <iostream>
+#include <vector>
 #include "../list.hpp"
 
-using namespace std;
+void push_pop()
+{
+    mrsuyi::list<int> li;
+    li.push_back(1);
+    li.push_back(1);
+    li.pop_back();
+    li.pop_back();
+}
 
 int main()
 {
-    mrsuyi::list<int> l;
-
-    auto it = l.begin();
+    std::vector<int> a;
+    mrsuyi::list<int> li;
 
     return 0;
 };
