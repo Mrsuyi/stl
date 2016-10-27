@@ -4,18 +4,61 @@
 #include "allocator.hpp"
 #include "default_delete.hpp"
 #include "unique_ptr.hpp"
+#include "weak_ptr.hpp"
 
 namespace mrsuyi
 {
 template <class T>
 class weak_ptr;
-template <class T, class Del>
-class unique_ptr;
+
+template <class T>
+class ctrl
+{
+    struct base
+    {
+        virtual ~base() {}
+        virtual void del(T*) = 0;
+    };
+
+    template <class Deleter, class Alloc>
+    struct inherit : base
+    {
+        inherit(Deleter del, Alloc alloc) : del_(del), alloc_(alloc) {}
+        virtual ~inherit() {}
+        virtual void del(T* t) override { del_(t); }
+        Deleter del_;
+        Alloc alloc_;
+    };
+
+private:
+    base* base_;
+
+public:
+    template <class Deleter = default_delete<T>, class Alloc = allocator<T>>
+    ctrl(T* ptr = nullptr, int shared = 0, int weak = 0, Deleter del = Deleter(), Alloc alloc = Alloc())
+        : managed(ptr),
+          shared(shared),
+          weak(weak),
+          base_(new inherit<Deleter, Alloc>(del, alloc))
+    {
+    }
+    ~ctrl()
+    {
+        base_->del(managed);
+        delete base_;
+    }
+
+public:
+    T* managed;
+    int shared;
+    int weak;
+};
 
 template <class T>
 class shared_ptr
 {
-    class ctrl;
+    template <class U>
+    friend class weak_ptr;
 
 public:
     using element_type = T;
@@ -95,57 +138,14 @@ public:
 
 private:
     T* stored_;
-    ctrl* ctrl_;
-};
-
-template <class T>
-class shared_ptr<T>::ctrl
-{
-    struct base
-    {
-        virtual ~base() {}
-        virtual void del(T*) = 0;
-    };
-
-    template <class Deleter, class Alloc>
-    struct inherit : base
-    {
-        inherit(Deleter del, Alloc alloc) : del_(del), alloc_(alloc) {}
-        virtual ~inherit() {}
-        virtual void del(T* t) override { del_(t); }
-        Deleter del_;
-        Alloc alloc_;
-    };
-
-private:
-    base* base_;
-
-public:
-    template <class Deleter = default_delete<T>, class Alloc = allocator<T>>
-    ctrl(T* ptr = nullptr, Deleter del = Deleter(), Alloc alloc = Alloc())
-        : managed(ptr),
-          shared(1),
-          weak(0),
-          base_(new inherit<Deleter, Alloc>(del, alloc))
-    {
-    }
-    ~ctrl()
-    {
-        base_->del(managed);
-        delete base_;
-    }
-
-public:
-    T* managed;
-    int shared;
-    int weak;
+    ctrl<T>* ctrl_;
 };
 
 //================================= ctor & dtor ==============================//
 // default
 template <class T>
 constexpr shared_ptr<T>::shared_ptr() noexcept : stored_(nullptr),
-                                                 ctrl_(new ctrl())
+                                                 ctrl_(new ctrl<T>(nullptr, 1))
 {
 }
 template <class T>
@@ -155,33 +155,34 @@ constexpr shared_ptr<T>::shared_ptr(std::nullptr_t) : shared_ptr()
 // from pointer
 template <class T>
 template <class U>
-shared_ptr<T>::shared_ptr(U* p) : stored_(p), ctrl_(new ctrl(p))
+shared_ptr<T>::shared_ptr(U* p) : stored_(p), ctrl_(new ctrl<T>(p, 1))
 {
 }
 // from deleter
 template <class T>
 template <class U, class Del>
-shared_ptr<T>::shared_ptr(U* p, Del del) : stored_(p), ctrl_(new ctrl(p, del))
+shared_ptr<T>::shared_ptr(U* p, Del del)
+    : stored_(p), ctrl_(new ctrl<T>(p, 1, 0, del))
 {
 }
 template <class T>
 template <class Del>
 shared_ptr<T>::shared_ptr(std::nullptr_t, Del del)
-    : stored_(nullptr), ctrl(new ctrl(nullptr, del))
+    : stored_(nullptr), ctrl_(new ctrl<T>(nullptr, 1, 0, del))
 {
 }
 // with deleter and allocator
 template <class T>
 template <class U, class Del, class Alloc>
 shared_ptr<T>::shared_ptr(U* p, Del del, Alloc alloc)
-    : stored_(p), ctrl_(new ctrl(p, del, alloc))
+    : stored_(p), ctrl_(new ctrl<T>(p, 1, 0, del, alloc))
 {
     ctrl_->shared = 1;
 }
 template <class T>
 template <class Del, class Alloc>
 shared_ptr<T>::shared_ptr(std::nullptr_t, Del del, Alloc alloc)
-    : stored_(del), ctrl_(new ctrl(nullptr, del, alloc))
+    : stored_(del), ctrl_(new ctrl<T>(nullptr, 1, 0, del, alloc))
 {
 }
 // copy
@@ -199,26 +200,31 @@ shared_ptr<T>::shared_ptr(const shared_ptr<U>& x) noexcept : stored_(x.ptr_),
     ++(ctrl_->shared);
 }
 // copy from weak
-
+template <class T>
+template <class U>
+shared_ptr<T>::shared_ptr(const weak_ptr<U>& x) : stored_(x.ctrl_->managed), ctrl_(x.ctrl_)
+{
+    ++(ctrl_->shared);
+}
 // move
 template <class T>
 shared_ptr<T>::shared_ptr(shared_ptr&& x) noexcept : stored_(x.stored_),
                                                      ctrl_(x.ctrl_)
 {
-    x.ctrl_ = new ctrl();
+    x.ctrl_ = new ctrl<T>(nullptr, 1);
 }
 template <class T>
 template <class U>
 shared_ptr<T>::shared_ptr(shared_ptr<U>&& x) noexcept : stored_(x.stored_),
                                                         ctrl_(x.ctrl_)
 {
-    x.ctrl_ = new ctrl();
+    x.ctrl_ = new ctrl<T>(nullptr, 1);
 }
 // move from unique
 template <class T>
 template <class U, class Del>
 shared_ptr<T>::shared_ptr(unique_ptr<U, Del>&& x)
-    : stored_(x.get()), ctrl_(new ctrl(x.get(), move(x.get_deleter())))
+    : stored_(x.get()), ctrl_(new ctrl<T>(x.get(), 1, 0, move(x.get_deleter())))
 {
     x.release();
 }
@@ -236,7 +242,7 @@ template <class T>
 shared_ptr<T>::~shared_ptr()
 {
     --(ctrl_->shared);
-    if (ctrl_->shared == 0) delete ctrl_;
+    if (ctrl_->shared == 0 && ctrl_->weak == 0) delete ctrl_;
 }
 
 //================================= assignment ===============================//
