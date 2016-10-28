@@ -196,6 +196,7 @@ erase()
 int
 main()
 {
+    vector<int> a;
     mrsuyi::vector<int> basic = {1, 2, 3};
     assert(basic.size() == 3);
     assert(basic[0] == 1);

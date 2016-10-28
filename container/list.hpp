@@ -1,10 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 
 #include "algorithm.hpp"
@@ -82,11 +84,8 @@ public:
 
     // mem
     allocator_type get_allocator() const noexcept;
-    void reserve(size_type size);
     void resize(size_type size, value_type val = value_type());
     void clear();
-    void shrink_to_fit();
-    size_type capacity() const noexcept;
     size_type size() const noexcept;
     bool empty() const noexcept;
 
@@ -152,6 +151,12 @@ template <class E>
 class list<T, Alloc>::iter
 {
 public:
+    using value_type = E;
+    using difference_type = size_t;
+    using reference = E&;
+    using pointer = E*;
+    using iterator_category = std::bidirectional_iterator_tag;
+
     iter(node* ptr) : ptr_(ptr) {}
     iter(const iter& it) : ptr_(it.ptr_) {}
     iter& operator=(const iter& it) { ptr_ = it.ptr_; }
@@ -166,7 +171,7 @@ public:
     }
     iter operator++(int)
     {
-        auto res = ptr_;
+        auto res = iter(ptr_);
         ptr_ = ptr_->nxt;
         return res;
     }
@@ -177,7 +182,7 @@ public:
     }
     iter operator--(int)
     {
-        auto res = ptr_;
+        auto res = iter(ptr_);
         ptr_ = ptr_->pre;
         return res;
     }
@@ -186,17 +191,69 @@ private:
     node* ptr_;
 };
 
-//============ cons & des ============//
+// ctor & dtor
+// default
 template <class T, template <class> class Alloc>
-list<T, Alloc>::list() : ptr_(new node()), alloc_(allocator_type())
+list<T, Alloc>::list() : list(allocator_type())
 {
 }
-
 template <class T, template <class> class Alloc>
-list<T, Alloc>::list(const allocator_type& alloc) : alloc_(alloc)
+list<T, Alloc>::list(const allocator_type& alloc)
+    : ptr_(new node()), alloc_(alloc)
 {
 }
-
+// fill
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list(size_type n, const allocator_type& alloc)
+    : list(n, T(), alloc)
+{
+}
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list(size_type n, const_reference val,
+                     const allocator_type& alloc)
+    : list(alloc)
+{
+    for (size_t i = 0; i < n; ++i) push_back(val);
+}
+// range
+template <class T, template <class> class Alloc>
+template <class InputIterator>
+list<T, Alloc>::list(
+    InputIterator first, InputIterator last, const allocator_type& alloc,
+    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+    : list(alloc)
+{
+    for (; first != last; ++first) push_back(*first);
+}
+// copy
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list(const list& x) : list(x, allocator_type())
+{
+}
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list(const list& x, const allocator_type& alloc)
+    : list(x.begin(), x.end(), alloc)
+{
+}
+// move
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list(list&& x) : list(move(x), allocator_type())
+{
+}
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list(list&& x, const allocator_type& alloc)
+    : ptr_(x.ptr), alloc_(alloc)
+{
+    x.ptr = new node();
+}
+// list
+template <class T, template <class> class Alloc>
+list<T, Alloc>::list(std::initializer_list<value_type> il,
+                     const allocator_type& alloc)
+    : list(il.begin(), il.end(), alloc)
+{
+}
+// dtor
 template <class T, template <class> class Alloc>
 list<T, Alloc>::~list() noexcept
 {
@@ -243,19 +300,24 @@ list<T, Alloc>::pop_back()
     delete old_tail;
 }
 
-// iterate
+// mem
 template <class T, template <class> class Alloc>
-typename list<T, Alloc>::iterator
-list<T, Alloc>::begin() noexcept
+typename list<T, Alloc>::allocator_type
+list<T, Alloc>::get_allocator() const noexcept
 {
-    return iterator(ptr_->nxt);
+    return alloc_;
 }
-
 template <class T, template <class> class Alloc>
-typename list<T, Alloc>::iterator
-list<T, Alloc>::end() noexcept
+size_t
+list<T, Alloc>::size() const noexcept
 {
-    return iterator(ptr_);
+    return std::distance(begin(), end());
+}
+template <class T, template <class> class Alloc>
+bool
+list<T, Alloc>::empty() const noexcept
+{
+    return size() == 0;
 }
 
 // get
@@ -284,4 +346,88 @@ list<T, Alloc>::back() const
     return *(this->end());
 }
 
+// iterate
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::iterator
+list<T, Alloc>::begin() noexcept
+{
+    return iterator(ptr_->nxt);
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::iterator
+list<T, Alloc>::end() noexcept
+{
+    return iterator(ptr_);
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::const_iterator
+list<T, Alloc>::begin() const noexcept
+{
+    return const_iterator(ptr_->nxt);
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::const_iterator
+list<T, Alloc>::end() const noexcept
+{
+    return const_iterator(ptr_);
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::const_iterator
+list<T, Alloc>::cbegin() const noexcept
+{
+    return const_iterator(ptr_->nxt);
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::const_iterator
+list<T, Alloc>::cend() const noexcept
+{
+    return const_iterator(ptr_);
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::reverse_iterator
+list<T, Alloc>::rbegin() noexcept
+{
+    return reverse_iterator(end());
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::reverse_iterator
+list<T, Alloc>::rend() noexcept
+{
+    return reverse_iterator(begin());
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::const_reverse_iterator
+list<T, Alloc>::rbegin() const noexcept
+{
+    return const_reverse_iterator(end());
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::const_reverse_iterator
+list<T, Alloc>::rend() const noexcept
+{
+    return const_reverse_iterator(begin());
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::const_reverse_iterator
+list<T, Alloc>::crbegin() const noexcept
+{
+    return const_reverse_iterator(end());
+}
+
+template <class T, template <class> class Alloc>
+typename list<T, Alloc>::const_reverse_iterator
+list<T, Alloc>::crend() const noexcept
+{
+    return const_reverse_iterator(begin());
+}
 }

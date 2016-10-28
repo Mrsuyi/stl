@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <stdexcept>
 #include "algorithm.hpp"
+#include "utility.hpp"
 #include "iterator.hpp"
 
 namespace mrsuyi
@@ -88,7 +90,7 @@ template <class T, size_t N>
 void
 array<T, N>::swap(array& x)
 {
-    for (size_type i = 0; i < N; ++i) std::swap(ptr_[i], x[i]);
+    for (size_type i = 0; i < N; ++i) swap(ptr_[i], x[i]);
 }
 
 template <class T, size_t N>

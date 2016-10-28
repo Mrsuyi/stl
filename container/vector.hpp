@@ -9,8 +9,8 @@
 
 #include "algorithm.hpp"
 #include "iterator.hpp"
-#include "utility.hpp"
 #include "memory.hpp"
+#include "utility.hpp"
 
 namespace mrsuyi
 {
@@ -143,23 +143,22 @@ private:
     allocator_type alloc_;
 };
 
-//============ cons & des ============//
+// ctor & dtor
+// default
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector() : vector(allocator_type())
 {
 }
-
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(const allocator_type& alloc) : alloc_(alloc)
 {
 }
-
+// fill
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(size_type n, const allocator_type& alloc)
     : vector(n, value_type(), alloc)
 {
 }
-
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(size_type n, const_reference val,
                          const allocator_type& alloc)
@@ -169,7 +168,7 @@ vector<T, Alloc>::vector(size_type n, const_reference val,
     for (size_type i = 0; i < n; ++i) alloc_.construct(ptr_ + i, val);
     size_ = n;
 }
-
+// range
 template <class T, template <class> class Alloc>
 template <class InputIterator>
 vector<T, Alloc>::vector(
@@ -179,12 +178,11 @@ vector<T, Alloc>::vector(
 {
     for (; first != last; ++first) push_back(*first);
 }
-
+// copy
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(const vector& x) : vector(x, allocator_type())
 {
 }
-
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(const vector& x, const allocator_type& alloc)
     : alloc_(alloc)
@@ -194,12 +192,11 @@ vector<T, Alloc>::vector(const vector& x, const allocator_type& alloc)
     for (size_type i = 0; i < x.size_; ++i)
         alloc_.construct(ptr_ + i, *(x.ptr_ + i));
 }
-
+// move
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(vector&& x) : vector(move(x), allocator_type())
 {
 }
-
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(vector&& x, const allocator_type& alloc)
     : alloc_(alloc)
@@ -208,18 +205,12 @@ vector<T, Alloc>::vector(vector&& x, const allocator_type& alloc)
     size_ = x.size_;
     capacity_ = x.capacity_;
 }
-
+// list
 template <class T, template <class> class Alloc>
 vector<T, Alloc>::vector(std::initializer_list<value_type> il,
                          const allocator_type& alloc)
-    : alloc_(alloc)
+    : vector(il.begin(), il.end(), alloc)
 {
-    reserve(il.size());
-    for (auto it = il.begin(); it != il.end(); ++it)
-    {
-        alloc_.construct(ptr_ + size_, *it);
-        ++size_;
-    }
 }
 
 template <class T, template <class> class Alloc>
