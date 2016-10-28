@@ -9,8 +9,8 @@
 
 #include "algorithm.hpp"
 #include "iterator.hpp"
-#include "memory/memory.hpp"
 #include "utility.hpp"
+#include "memory.hpp"
 
 namespace mrsuyi
 {

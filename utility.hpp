@@ -27,6 +27,22 @@ forward(typename std::remove_reference<T>::type& t)
     return static_cast<T&&>(t);
 }
 
+//=================================== swap ===================================//
+template <class T>
+void swap(T& a, T& b)
+{
+    T c(move(a));
+    a = move(b);
+    b = move(c);
+}
+
+template <class T, std::size_t N>
+void swap(T (&a)[N], T (&b)[N])
+{
+    for (std::size_t i = 0; i < N; ++i)
+        swap(a[i], b[i]);
+}
+
 //=================================== pair ===================================//
 template <class T1, class T2>
 struct pair
@@ -137,4 +153,5 @@ operator>=(const pair<T1, T2>& lhs, const pair<T1, T2>& rhs)
 {
     return !(lhs < rhs);
 }
+
 }
