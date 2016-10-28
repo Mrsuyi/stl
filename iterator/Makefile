@@ -1,6 +1,6 @@
 #=================================== config ==================================#
 CXX      := g++
-CXXFLAGS := -std=c++11
+CXXFLAGS := -std=c++11 -I..
 AR       := ar
 ARFLAGS  := crs
 MAKE     := make

@@ -19,10 +19,7 @@ public:
     using value_type = void;
 
     template <class U>
-    struct rebind
-    {
-        using other = allocator<U>;
-    };
+    using other = allocator<U>;
 };
 
 template <class T>
@@ -38,7 +35,7 @@ public:
     using difference_type = ptrdiff_t;
     
     template <class U>
-    using rebind = allocator<U>;
+    using other = allocator<U>;
 
     // cons & des
     allocator() noexcept;

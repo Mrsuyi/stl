@@ -29,7 +29,8 @@ forward(typename std::remove_reference<T>::type& t)
 
 //=================================== swap ===================================//
 template <class T>
-void swap(T& a, T& b)
+void
+swap(T& a, T& b)
 {
     T c(move(a));
     a = move(b);
@@ -39,8 +40,7 @@ void swap(T& a, T& b)
 template <class T, std::size_t N>
 void swap(T (&a)[N], T (&b)[N])
 {
-    for (std::size_t i = 0; i < N; ++i)
-        swap(a[i], b[i]);
+    for (std::size_t i = 0; i < N; ++i) swap(a[i], b[i]);
 }
 
 //=================================== pair ===================================//
@@ -153,5 +153,4 @@ operator>=(const pair<T1, T2>& lhs, const pair<T1, T2>& rhs)
 {
     return !(lhs < rhs);
 }
-
 }

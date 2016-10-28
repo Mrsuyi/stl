@@ -37,4 +37,13 @@ public:
     using pointer = T*;
     using iterator_category = random_access_iterator_tag;
 };
+
+// this function is used for it-tag-dispatch
+// i.e. template-function overload according to it-type-traits
+template <class Iterator>
+typename iterator_traits<Iterator>::iterator_category
+__iterator_category(const Iterator&)
+{
+    return typename iterator_traits<Iterator>::iterator_category();
+}
 }
