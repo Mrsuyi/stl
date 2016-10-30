@@ -1,4 +1,4 @@
-#include "../vector.hpp"
+#include "vector.hpp"
 #include <cassert>
 #include <iostream>
 #include <vector>

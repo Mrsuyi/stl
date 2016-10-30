@@ -1,4 +1,4 @@
-#include "../array.hpp"
+#include "array.hpp"
 #include <array>
 #include <cassert>
 #include <iostream>

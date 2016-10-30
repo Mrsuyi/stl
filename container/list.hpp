@@ -160,6 +160,20 @@ public:
     void splice(const_iterator pos, list&& other, const_iterator first,
                 const_iterator last);
 
+    void remove(const T& val);
+    template <class UnaryPredicate>
+    void remove_if(UnaryPredicate p);
+
+    void reverse();
+
+    void unique();
+    template <class BinaryPredicate>
+    void unique(BinaryPredicate p);
+
+    void sort();
+    template <class Compare>
+    void sort(Compare cmp);
+
 private:
     // new/delete
     template <class... Args>
@@ -728,8 +742,8 @@ list<T, Alloc>::merge(list&& other, Compare cmp)
         tail = other.joint_->pre;
     }
     // close this's node-circle
-    tail->nxt = joint_;
-    joint_->pre = tail;
+    tail->nxt = pthis;
+    pthis->pre = tail;
     // reset other
     other.joint_->pre = other.joint_;
     other.joint_->nxt = other.joint_;
@@ -781,6 +795,75 @@ list<T, Alloc>::splice(const_iterator pos, list&& other, const_iterator first,
     node* tail = last.node_->pre;
     other.yield(head, tail, cnt);
     insert(pos.node_, head, tail, cnt);
+}
+// remove
+template <class T, class Alloc>
+void
+list<T, Alloc>::remove(const T& val)
+{
+    for (auto it = begin(); it != end();)
+        if (*it == val)
+            it = erase(it);
+        else
+            ++it;
+}
+template <class T, class Alloc>
+template <class UnaryPredicate>
+void
+list<T, Alloc>::remove_if(UnaryPredicate p)
+{
+    for (auto it = begin(); it != end();)
+        if (p(*it))
+            it = erase(it);
+        else
+            ++it;
+}
+// unique
+template <class T, class Alloc>
+void
+list<T, Alloc>::unique()
+{
+    unique([](const T& a, const T& b) { return a == b; });
+}
+template <class T, class Alloc>
+template <class BinaryPredicate>
+void
+list<T, Alloc>::unique(BinaryPredicate p)
+{
+    for (auto it1 = begin(), it2 = ++begin(); it2 != end();)
+        if (p(*it1, *it2))
+        {
+            it2 = erase(it2);
+        }
+        else
+        {
+            ++it1;
+            ++it2;
+        }
+}
+
+template <class T, class Alloc>
+void
+list<T, Alloc>::sort()
+{
+    sort([](const T& a, const T& b) { return a < b; });
+}
+template <class T, class Alloc>
+template <class Compare>
+void
+list<T, Alloc>::sort(Compare p)
+{
+    if (size_ <= 1) return;
+   
+    auto it = begin();
+    for (size_t i = 0; i < size_ / 2; ++i, ++it);
+    list tmp;
+    tmp.splice(tmp.begin(), *this, begin(), it);
+
+    tmp.sort(p);
+    sort();
+
+    merge(move(tmp), p);
 }
 
 // non-member functions
