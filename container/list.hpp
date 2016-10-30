@@ -23,9 +23,6 @@ class list
         node *pre, *nxt;
         T t;
 
-        node() : pre(this), nxt(this) {}
-        node(const T& t) : pre(this), nxt(this), t(t) {}
-        node(T&& t) : pre(this), nxt(this), t(move(t)) {}
         template <class... Args>
         node(Args&&... args) : pre(this), nxt(this), t(forward<Args>(args)...)
         {
@@ -154,22 +151,33 @@ public:
     template <class Compare>
     void merge(list&&, Compare);
 
+    void splice(const_iterator pos, list& other);
     void splice(const_iterator pos, list&& other);
+    void splice(const_iterator pos, list& other, const_iterator it);
     void splice(const_iterator pos, list&& other, const_iterator it);
+    void splice(const_iterator pos, list& other, const_iterator first,
+                const_iterator last);
     void splice(const_iterator pos, list&& other, const_iterator first,
                 const_iterator last);
 
 private:
+    // new/delete
     template <class... Args>
     node* new_node(Args... args);
     void del_node(node*);
-
-    node* insert(node* pos, node* ins);
-    node* erase(node*);
+    // insert [one | head-tail] into list and increase size_ by [cnt]
+    node* insert(node* pos, node* one);
+    node* insert(node* pos, node* head, node* tail, size_t cnt);
+    // extract [one | head-tail] from list and decrease size_ by [cnt]
+    node* yield(node* one);
+    node* yield(node* head, node* tail, size_t cnt);
+    // erase [one] from list, delete it, and return its' following node
+    node* erase(node* one);
 
 private:
     allocator_type alloc_;
-    node* ptr_;
+    node* joint_;
+    size_t size_;
 };
 
 template <class T, class Alloc>
@@ -185,44 +193,57 @@ public:
     using pointer = E*;
     using iterator_category = bidirectional_iterator_tag;
 
-    iter(node* ptr) : ptr_(ptr) {}
-    iter(const iter& it) : ptr_(it.ptr_) {}
-    iter& operator=(const iter& it) { ptr_ = it.ptr_; }
-    E& operator*() const { return ptr_->t; }
-    E* operator->() const { return &(ptr_->t); }
-    bool operator==(const iter& it) { return ptr_ == it.ptr_; }
-    bool operator!=(const iter& it) { return ptr_ != it.ptr_; }
+    iter(node* ptr) : node_(ptr) {}
+    iter(const iter& it) : node_(it.node_) {}
+    iter&
+    operator=(const iter& it)
+    {
+        node_ = it.node_;
+    }
+    E& operator*() const { return node_->t; }
+    E* operator->() const { return &(node_->t); }
+    bool
+    operator==(const iter& it)
+    {
+        return node_ == it.node_;
+    }
+    bool
+    operator!=(const iter& it)
+    {
+        return node_ != it.node_;
+    }
     iter& operator++()
     {
-        ptr_ = ptr_->nxt;
+        node_ = node_->nxt;
         return *this;
     }
     iter operator++(int)
     {
-        auto res = iter(ptr_);
-        ptr_ = ptr_->nxt;
+        auto res = iter(node_);
+        node_ = node_->nxt;
         return res;
     }
     iter& operator--()
     {
-        ptr_ = ptr_->pre;
+        node_ = node_->pre;
         return *this;
     }
     iter operator--(int)
     {
-        auto res = iter(ptr_);
-        ptr_ = ptr_->pre;
+        auto res = iter(node_);
+        node_ = node_->pre;
         return res;
     }
-    operator iter<const E>() const { return iter<const E>(ptr_); }
+    operator iter<const E>() const { return iter<const E>(node_); }
 private:
-    node* ptr_;
+    node* node_;
 };
 
-// list-private-functions
+// new/delete function
 template <class T, class Alloc>
 template <class... Args>
-typename list<T, Alloc>::node* list<T, Alloc>::new_node(Args... args)
+typename list<T, Alloc>::node*
+list<T, Alloc>::new_node(Args... args)
 {
     node* ptr = alloc_.allocate(1);
     alloc_.construct(ptr, forward<Args>(args)...);
@@ -235,25 +256,45 @@ list<T, Alloc>::del_node(node* ptr)
     alloc_.destroy(ptr);
     alloc_.deallocate(ptr, 1);
 }
-
+// node/size manipulations
 template <class T, class Alloc>
 typename list<T, Alloc>::node*
-list<T, Alloc>::insert(node* pos, node* ins)
+list<T, Alloc>::insert(node* pos, node* one)
 {
-    ins->nxt = pos;
-    ins->pre = pos->pre;
-    pos->pre->nxt = ins;
-    pos->pre = ins;
-    return ins;
+    return insert(pos, one, one, 1);
 }
 template <class T, class Alloc>
 typename list<T, Alloc>::node*
-list<T, Alloc>::erase(node* era)
+list<T, Alloc>::insert(node* pos, node* head, node* tail, size_t cnt)
 {
-    auto res = era->nxt;
-    era->pre->nxt = era->nxt;
-    era->nxt->pre = era->pre;
-    del_node(era);
+    size_ += cnt;
+    head->pre = pos->pre;
+    pos->pre->nxt = head;
+    tail->nxt = pos;
+    pos->pre = tail;
+    return head;
+}
+template <class T, class Alloc>
+typename list<T, Alloc>::node*
+list<T, Alloc>::yield(node* one)
+{
+    return yield(one, one, 1);
+}
+template <class T, class Alloc>
+typename list<T, Alloc>::node*
+list<T, Alloc>::yield(node* head, node* tail, size_t cnt)
+{
+    size_ -= cnt;
+    head->pre->nxt = tail->nxt;
+    tail->nxt->pre = head->pre;
+    return head;
+}
+template <class T, class Alloc>
+typename list<T, Alloc>::node*
+list<T, Alloc>::erase(node* one)
+{
+    auto res = one->nxt;
+    del_node(yield(one));
     return res;
 }
 
@@ -265,7 +306,7 @@ list<T, Alloc>::list() : list(allocator_type())
 }
 template <class T, class Alloc>
 list<T, Alloc>::list(const allocator_type& alloc)
-    : ptr_(new_node()), alloc_(alloc)
+    : joint_(new_node()), alloc_(alloc), size_(0)
 {
 }
 // fill
@@ -279,6 +320,7 @@ list<T, Alloc>::list(size_t n, const T& val, const allocator_type& alloc)
     : list(alloc)
 {
     for (size_t i = 0; i < n; ++i) push_back(val);
+    size_ = n;
 }
 // range
 template <class T, class Alloc>
@@ -307,9 +349,10 @@ list<T, Alloc>::list(list&& x) : list(move(x), allocator_type())
 }
 template <class T, class Alloc>
 list<T, Alloc>::list(list&& x, const allocator_type& alloc)
-    : ptr_(x.ptr_), alloc_(alloc)
+    : joint_(x.joint_), alloc_(alloc), size_(x.size_)
 {
-    x.ptr_ = new_node();
+    x.joint_ = new_node();
+    x.size_ = 0;
 }
 // list
 template <class T, class Alloc>
@@ -321,13 +364,13 @@ list<T, Alloc>::list(std::initializer_list<T> il, const allocator_type& alloc)
 template <class T, class Alloc>
 list<T, Alloc>::~list() noexcept
 {
-    auto ptr = ptr_;
+    node* it = joint_;
     do
     {
-        auto tmp = ptr;
-        ptr = ptr->nxt;
+        node* tmp = it;
+        it = it->nxt;
         del_node(tmp);
-    } while (ptr != ptr_);
+    } while (it != joint_);
 }
 // =
 template <class T, class Alloc>
@@ -409,42 +452,42 @@ template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::begin() noexcept
 {
-    return iterator(ptr_->nxt);
+    return iterator(joint_->nxt);
 }
 
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::end() noexcept
 {
-    return iterator(ptr_);
+    return iterator(joint_);
 }
 
 template <class T, class Alloc>
 typename list<T, Alloc>::const_iterator
 list<T, Alloc>::begin() const noexcept
 {
-    return const_iterator(ptr_->nxt);
+    return const_iterator(joint_->nxt);
 }
 
 template <class T, class Alloc>
 typename list<T, Alloc>::const_iterator
 list<T, Alloc>::end() const noexcept
 {
-    return const_iterator(ptr_);
+    return const_iterator(joint_);
 }
 
 template <class T, class Alloc>
 typename list<T, Alloc>::const_iterator
 list<T, Alloc>::cbegin() const noexcept
 {
-    return const_iterator(ptr_->nxt);
+    return const_iterator(joint_->nxt);
 }
 
 template <class T, class Alloc>
 typename list<T, Alloc>::const_iterator
 list<T, Alloc>::cend() const noexcept
 {
-    return const_iterator(ptr_);
+    return const_iterator(joint_);
 }
 
 template <class T, class Alloc>
@@ -494,13 +537,13 @@ template <class T, class Alloc>
 size_t
 list<T, Alloc>::size() const noexcept
 {
-    return distance(begin(), end());
+    return size_;
 }
 template <class T, class Alloc>
 bool
 list<T, Alloc>::empty() const noexcept
 {
-    return size() == 0;
+    return size_ == 0;
 }
 template <class T, class Alloc>
 size_t
@@ -526,18 +569,18 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::resize(size_t size, const T& val)
 {
-    size_t len = this->size();
-    if (len < size)
-        for (size_t i = len; i < size; ++i) push_back(val);
+    if (size_ < size)
+        for (size_t i = size_; i < size; ++i) push_back(val);
     else
-        for (size_t i = size; i < len; ++i) pop_back();
+        for (size_t i = size; i < size_; ++i) pop_back();
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::swap(list& x)
 {
-    mrsuyi::swap(ptr_, x.ptr_);
+    mrsuyi::swap(joint_, x.joint_);
     mrsuyi::swap(alloc_, x.alloc_);
+    mrsuyi::swap(size_, x.size_);
 }
 
 // push/pop -- front/back
@@ -545,37 +588,37 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(const T& val)
 {
-    insert(ptr_->nxt, new_node(val));
+    insert(joint_->nxt, new_node(val));
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(T&& val)
 {
-    insert(ptr_->nxt, new_node(move(val)));
+    insert(joint_->nxt, new_node(move(val)));
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(const T& val)
 {
-    insert(ptr_, new_node(val));
+    insert(joint_, new_node(val));
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(T&& val)
 {
-    insert(ptr_, new_node(move(val)));
+    insert(joint_, new_node(move(val)));
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::pop_front()
 {
-    erase(ptr_->nxt);
+    erase(joint_->nxt);
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::pop_back()
 {
-    erase(ptr_->pre);
+    erase(joint_->pre);
 }
 
 // emplace front/back
@@ -584,21 +627,21 @@ template <class... Args>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::emplace(const_iterator pos, Args&&... args)
 {
-    return iterator(insert(pos.ptr_, new_node(forward<Args>(args)...)));
+    return iterator(insert(pos.node_, new_node(forward<Args>(args)...)));
 }
 template <class T, class Alloc>
 template <class... Args>
 void
 list<T, Alloc>::emplace_back(Args&&... args)
 {
-    insert(ptr_, new_node(forward<Args>(args)...));
+    insert(joint_, new_node(forward<Args>(args)...));
 }
 template <class T, class Alloc>
 template <class... Args>
 void
 list<T, Alloc>::emplace_front(Args&&... args)
 {
-    insert(ptr_->nxt, new_node(forward<Args>(args)...));
+    insert(joint_->nxt, new_node(forward<Args>(args)...));
 }
 
 // insert/erase
@@ -606,19 +649,19 @@ template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, const T& val)
 {
-    return iterator(insert(pos.ptr_, new_node(val)));
+    return iterator(insert(pos.node_, new_node(val)));
 }
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, T&& val)
 {
-    return iterator(insert(pos.ptr_, new_node(move(val))));
+    return iterator(insert(pos.node_, new_node(move(val))));
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::insert(const_iterator pos, size_t n, const T& val)
 {
-    for (size_t i = 0; i < n; ++i) insert(pos.ptr_, new_node(val));
+    for (size_t i = 0; i < n; ++i) insert(pos.node_, new_node(val));
 }
 template <class T, class Alloc>
 template <class InputIterator>
@@ -627,13 +670,13 @@ list<T, Alloc>::insert(
     const_iterator pos, InputIterator first, InputIterator last,
     typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
 {
-    for (; first != last; ++first) insert(pos.ptr_, new_node(*first));
+    for (; first != last; ++first) insert(pos.node_, new_node(*first));
 }
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::erase(const_iterator pos)
 {
-    return iterator(erase(pos.ptr_));
+    return iterator(erase(pos.node_));
 }
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
@@ -643,6 +686,7 @@ list<T, Alloc>::erase(const_iterator first, const_iterator last)
         ;
 }
 // operations
+// merge
 template <class T, class Alloc>
 void
 list<T, Alloc>::merge(list&& other)
@@ -654,10 +698,12 @@ template <class Compare>
 void
 list<T, Alloc>::merge(list&& other, Compare cmp)
 {
-    node* tail = ptr_;
-    node* pthis = ptr_->nxt;
-    node* pthat = other.ptr_->nxt;
-    while (pthis != ptr_ && pthat != other.ptr_)
+    size_ += other.size_;
+    // use three pointer to merge
+    node* tail = joint_;
+    node* pthis = joint_->nxt;
+    node* pthat = other.joint_->nxt;
+    while (pthis != joint_ && pthat != other.joint_)
     {
         if (cmp(pthis->t, pthat->t))
         {
@@ -674,14 +720,67 @@ list<T, Alloc>::merge(list&& other, Compare cmp)
             pthat = pthat->nxt;
         }
     }
-    if (pthat != other.ptr_)
+    // append rest of other to this
+    if (pthat != other.joint_)
     {
         tail->nxt = pthat;
         pthat->pre = tail;
-        tail = other.ptr_->pre;
+        tail = other.joint_->pre;
     }
-    tail->nxt = ptr_;
-    ptr_->pre = tail;
+    // close this's node-circle
+    tail->nxt = joint_;
+    joint_->pre = tail;
+    // reset other
+    other.joint_->pre = other.joint_;
+    other.joint_->nxt = other.joint_;
+    other.size_ = 0;
+}
+// splice
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list& other)
+{
+    splice(pos, move(other));
+}
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list&& other)
+{
+    if (other.size_ == 0) return;
+    insert(pos.node_, other.joint_->nxt, other.joint_->pre, other.size_);
+    other.joint_->pre = other.joint_;
+    other.joint_->nxt = other.joint_;
+    other.size_ = 0;
+}
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list& other, const_iterator it)
+{
+    splice(pos, move(other), it);
+}
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list&& other, const_iterator it)
+{
+    insert(pos.node_, other.yield(it.node_));
+}
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list& other, const_iterator first,
+                       const_iterator last)
+{
+    splice(pos, move(other), first, last);
+}
+template <class T, class Alloc>
+void
+list<T, Alloc>::splice(const_iterator pos, list&& other, const_iterator first,
+                       const_iterator last)
+{
+    size_t cnt = distance(first, last);
+    node* head = first.node_;
+    node* tail = last.node_->pre;
+    other.yield(head, tail, cnt);
+    insert(pos.node_, head, tail, cnt);
 }
 
 // non-member functions

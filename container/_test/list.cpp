@@ -4,6 +4,8 @@
 #include <vector>
 
 using namespace mrsuyi;
+using std::cout;
+using std::endl;
 
 void
 ctor_dtor()
@@ -144,6 +146,28 @@ merge()
     assert(l1 == list<int>({1, 2, 3, 4, 5, 6}));
 }
 
+void
+splice()
+{
+    list<int> l1 = {1, 2};
+    list<int> l2 = {3, 4};
+    l1.splice(++l1.begin(), l2);
+    assert(l1 == list<int>({1, 3, 4, 2}));
+    assert(l2 == list<int>({}));
+
+    l1 = {1, 2, 3};
+    l2 = {4, 5, 6};
+    l1.splice(l1.end(), l2, ++l2.begin());
+    assert(l1 == list<int>({1, 2, 3, 5}));
+    assert(l2 == list<int>({4, 6}));
+
+    l1 = {1, 2, 3};
+    l2 = {4, 5, 6};
+    l1.splice(++l1.begin(), l2, ++l2.begin(), l2.end());
+    assert(l1 == list<int>({1, 5, 6, 2, 3}));
+    assert(l2 == list<int>({4}));
+}
+
 int
 main()
 {
@@ -157,6 +181,7 @@ main()
     insert();
     erase();
     merge();
+    splice();
 
     return 0;
 };
