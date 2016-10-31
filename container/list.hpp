@@ -174,7 +174,7 @@ public:
     template <class Compare>
     void sort(Compare cmp);
 
-private:
+protected:
     // new/delete
     template <class... Args>
     node* new_node(Args... args);
@@ -188,7 +188,7 @@ private:
     // erase [one] from list, delete it, and return its' following node
     node* erase(node* one);
 
-private:
+protected:
     allocator_type alloc_;
     node* joint_;
     size_t size_;
