@@ -29,40 +29,40 @@ public:
 
     // ctor & dtor
     // default
-    explicit stack(const Container& cont);
-    explicit stack(Container&& cont = Container());
+    explicit stack(const Container&);
+    explicit stack(Container&& = Container());
     // copy
-    stack(const stack& other);
+    stack(const stack&);
     // move
-    stack(stack&& other);
-    // from container & allocator
+    stack(stack&&);
+    // from ainer & allocator
     template <class Alloc>
     explicit stack(
-        const Alloc& alloc,
+        const Alloc&,
         typename std::enable_if<
             !std::uses_allocator<Container, Alloc>::value>::type* = 0);
     template <class Alloc>
-    stack(const Container& cont, const Alloc& alloc,
+    stack(const Container&, const Alloc&,
           typename std::enable_if<
               !std::uses_allocator<Container, Alloc>::value>::type* = 0);
     template <class Alloc>
-    stack(Container&& cont, const Alloc& alloc,
+    stack(Container&&, const Alloc&,
           typename std::enable_if<
               !std::uses_allocator<Container, Alloc>::value>::type* = 0);
-    // from stack & alloc
+    // from stack &
     template <class Alloc>
-    stack(const stack& other, const Alloc& alloc,
+    stack(const stack&, const Alloc&,
           typename std::enable_if<
               !std::uses_allocator<Container, Alloc>::value>::type* = 0);
     template <class Alloc>
-    stack(stack&& other, const Alloc& alloc,
+    stack(stack&&, const Alloc&,
           typename std::enable_if<
               !std::uses_allocator<Container, Alloc>::value>::type* = 0);
     // dtor
     ~stack();
     // assginment
-    stack& operator=(const stack& other);
-    stack& operator=(stack&& other);
+    stack& operator=(const stack&);
+    stack& operator=(stack&&);
 
     // element access
     T& top();
@@ -82,7 +82,7 @@ public:
     void pop();
 
     void swap(stack& other);
-    
+
 protected:
     Container cont_;
 };
@@ -161,13 +161,13 @@ stack<T, Container>::~stack()
 // assignment
 template <class T, class Container>
 stack<T, Container>&
-stack<T, Container>::operator = (const stack& other)
+stack<T, Container>::operator=(const stack& other)
 {
     stack(other).swap(*this);
 }
 template <class T, class Container>
 stack<T, Container>&
-stack<T, Container>::operator = (stack&& other)
+stack<T, Container>::operator=(stack&& other)
 {
     stack(move(other)).swap(*this);
 }

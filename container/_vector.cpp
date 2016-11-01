@@ -3,7 +3,9 @@
 #include <iostream>
 #include <vector>
 
-using namespace std;
+using namespace mrsuyi;
+using std::cout;
+using std::endl;
 
 template <class T>
 void
@@ -31,11 +33,11 @@ struct shit
 void
 cmp()
 {
-    mrsuyi::vector<int> v123 = {1, 2, 3};
-    mrsuyi::vector<int> v12 = {1, 2};
-    mrsuyi::vector<int> v122 = {1, 2, 2};
+    vector<int> v123 = {1, 2, 3};
+    vector<int> v12 = {1, 2};
+    vector<int> v122 = {1, 2, 2};
 
-    assert(v123 == mrsuyi::vector<int>({1, 2, 3}));
+    assert(v123 == vector<int>({1, 2, 3}));
     assert(v123 != v12);
     assert(v123 > v12);
     assert(v123 >= v12);
@@ -52,35 +54,34 @@ cmp()
 void
 con_de()
 {
-    using vec = mrsuyi::vector<int>;
     // default
-    vec dft;
+    vector<int> dft;
     // fill
-    vec fill_dft(1);
-    assert(fill_dft == vec({0}));
-    vec fill(3, 1);
-    assert(fill == vec({1, 1, 1}));
+    vector<int> fill_dft(1);
+    assert(fill_dft == vector<int>({0}));
+    vector<int> fill(3, 1);
+    assert(fill == vector<int>({1, 1, 1}));
     //// range
     std::vector<int> src = {1, 2, 3};
-    vec cmp = {1, 2, 3};
-    vec range(src.begin(), src.end());
+    vector<int> cmp = {1, 2, 3};
+    vector<int> range(src.begin(), src.end());
     assert(range == cmp);
     //// copy
-    vec copy(range);
+    vector<int> copy(range);
     assert(copy == range);
     //// move
-    vec move(std::move(range));
+    vector<int> move(std::move(range));
     assert(move == cmp);
     // = copy
-    vec oper_copy;
+    vector<int> oper_copy;
     oper_copy = copy;
     assert(oper_copy == copy);
     // = move
-    vec oper_move;
+    vector<int> oper_move;
     oper_move = (std::move(move));
     assert(oper_move == cmp);
     // = init
-    vec oper_il;
+    vector<int> oper_il;
     oper_il = {1, 2, 3};
     assert(oper_il == cmp);
 }
@@ -88,7 +89,7 @@ con_de()
 void
 assign()
 {
-    using vec = mrsuyi::vector<int>;
+    using vec = vector<int>;
     vec cmp = {1, 2, 3};
 
     vec v = {1};
@@ -104,7 +105,7 @@ void
 iter()
 {
     // non-const
-    mrsuyi::vector<int> v(10, 1);
+    vector<int> v(10, 1);
     int i = 0;
     for (auto it = v.begin(); it != v.end(); ++it)
     {
@@ -122,7 +123,7 @@ iter()
 void
 iter_rev()
 {
-    mrsuyi::vector<int> v = {1, 2, 3};
+    vector<int> v = {1, 2, 3};
     auto it = v.rbegin();
     for (int i = 3; i >= 1; --i, ++it) assert(*it == i);
 }
@@ -130,7 +131,7 @@ iter_rev()
 void
 mem()
 {
-    mrsuyi::vector<int> ints;
+    vector<int> ints;
     printf("pushed=0, size=%lu, capacity=%lu\n", ints.size(), ints.capacity());
 
     for (int i = 0; i < 17; ++i)
@@ -144,7 +145,7 @@ mem()
 void
 insert()
 {
-    mrsuyi::vector<int> ints(2, 1);
+    vector<int> ints(2, 1);
     auto it = ints.begin();
     ++it;
     it = ints.insert(it, 10);
@@ -168,7 +169,7 @@ insert()
 void
 emplace()
 {
-    mrsuyi::vector<int> ints(2, 1);
+    vector<int> ints(2, 1);
     auto it = ints.begin();
     ++it;
     ints.emplace(it, 10);
@@ -183,7 +184,7 @@ emplace()
 void
 erase()
 {
-    mrsuyi::vector<int> v = {1, 2, 3, 4, 5};
+    vector<int> v = {1, 2, 3, 4, 5};
     auto it = v.erase(v.begin());
     assert(*it == 2);
     it = v.erase(it + 1, it + 3);
@@ -196,8 +197,10 @@ erase()
 int
 main()
 {
+    std::vector<int> std_vec;
+
     vector<int> a;
-    mrsuyi::vector<int> basic = {1, 2, 3};
+    vector<int> basic = {1, 2, 3};
     assert(basic.size() == 3);
     assert(basic[0] == 1);
     assert(basic[1] == 2);

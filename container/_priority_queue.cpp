@@ -1,13 +1,15 @@
 #include <iostream>
-#include <deque>
-#include "deque.hpp"
+
+#include "priority_queue.hpp"
+#include <queue>
 
 using std::cout;
 using std::endl;
 
 int main()
 {
-    std::deque<int> dq;
+    std::priority_queue<int> a;
 
     return 0;
 };
+
