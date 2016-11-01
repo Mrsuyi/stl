@@ -45,18 +45,18 @@ public:
     // ~
     ~priority_queue();
     // =
-    priority_queue& operator = (const priority_queue&);
-    priority_queue& operator = (priority_queue&&);
+    priority_queue& operator=(const priority_queue&);
+    priority_queue& operator=(priority_queue&&);
 
     // element access
-    const_reference top() const; 
+    const_reference top() const;
 
     // capacity
     bool empty() const;
     size_type size() const;
 
     // modifiers
-    void push(const value_type& value);    
+    void push(const value_type& value);
     void push(value_type&& value);
 
     template <class... Args>
@@ -71,5 +71,56 @@ protected:
     Compare cmp_;
 };
 
-
+//===================================== basic ================================//
+// ctor & dtor
+// default
+template <class T, class Container, class Compare>
+priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
+                                                      const Container& cont)
+    : cmp_(cmp), cont_(cont)
+{
+}
+template <class T, class Container, class Compare>
+priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
+                                                      Container&& cont)
+    : cmp_(cmp), cont_(move(cont))
+{
+}
+// copy
+template <class T, class Container, class Compare>
+priority_queue<T, Container, Compare>::priority_queue(const priority_queue& q)
+    : cmp_(q.cmp_), cont_(q.cont_)
+{
+}
+// move
+template <class T, class Container, class Compare>
+priority_queue<T, Container, Compare>::priority_queue(priority_queue&& q)
+    : cmp_(q.cmp_), cont_(move(q.cont_))
+{
+}
+// from alloc
+template <class T, class Container, class Compare>
+template <class Alloc>
+priority_queue<T, Container, Compare>::priority_queue(const Alloc& alloc)
+    : cmp_(Compare()), cont_(alloc)
+{
+}
+template <class T, class Container, class Compare>
+template <class Alloc>
+priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp, const Alloc& alloc)
+    : cmp_(cmp), cont_(alloc)
+{
+}
+template <class T, class Container, class Compare>
+template <class Alloc>
+priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp, const Container& cont, const Alloc& alloc)
+    : cmp_(cmp), cont_(cont, alloc)
+{
+}
+template <class T, class Container, class Compare>
+template <class Alloc>
+priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp, Container&& cont, const Alloc& alloc)
+    : cmp_(cmp), cont_(move(cont), alloc)
+{
+}
 }
