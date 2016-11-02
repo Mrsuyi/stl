@@ -56,8 +56,8 @@ public:
     size_type size() const;
 
     // modifiers
-    void push(const value_type& value);
-    void push(value_type&& value);
+    void push(const value_type&);
+    void push(value_type&&);
 
     template <class... Args>
     void emplace(Args&&... args);
@@ -107,20 +107,130 @@ priority_queue<T, Container, Compare>::priority_queue(const Alloc& alloc)
 }
 template <class T, class Container, class Compare>
 template <class Alloc>
-priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp, const Alloc& alloc)
+priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
+                                                      const Alloc& alloc)
     : cmp_(cmp), cont_(alloc)
 {
 }
 template <class T, class Container, class Compare>
 template <class Alloc>
-priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp, const Container& cont, const Alloc& alloc)
+priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
+                                                      const Container& cont,
+                                                      const Alloc& alloc)
     : cmp_(cmp), cont_(cont, alloc)
 {
 }
 template <class T, class Container, class Compare>
 template <class Alloc>
-priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp, Container&& cont, const Alloc& alloc)
+priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
+                                                      Container&& cont,
+                                                      const Alloc& alloc)
     : cmp_(cmp), cont_(move(cont), alloc)
 {
+}
+// range
+template <class T, class Container, class Compare>
+template <class InputIt>
+priority_queue<T, Container, Compare>::priority_queue(InputIt first,
+                                                      InputIt last,
+                                                      const Compare& cmp,
+                                                      const Container& cont)
+    : cmp_(cmp), cont_(cont)
+{
+    for (; first != last; ++first) cont_.push_back(*first);
+}
+template <class T, class Container, class Compare>
+template <class InputIt>
+priority_queue<T, Container, Compare>::priority_queue(InputIt first,
+                                                      InputIt last,
+                                                      const Compare& cmp,
+                                                      Container&& cont)
+    : cmp_(cmp), cont_(move(cont))
+{
+    for (; first != last; ++first) cont_.push_back(*first);
+}
+// dtor
+template <class T, class Container, class Compare>
+priority_queue<T, Container, Compare>::~priority_queue()
+{
+}
+// =
+template <class T, class Container, class Compare>
+priority_queue<T, Container, Compare>&
+priority_queue<T, Container, Compare>::operator=(const priority_queue&)
+{
+}
+template <class T, class Container, class Compare>
+priority_queue<T, Container, Compare>&
+priority_queue<T, Container, Compare>::operator=(priority_queue&&)
+{
+}
+
+//================================ element access ============================//
+template <class T, class Container, class Compare>
+typename priority_queue<T, Container, Compare>::const_reference
+priority_queue<T, Container, Compare>::top() const
+{
+    return cont_.front();
+}
+
+//================================ element access ============================//
+template <class T, class Container, class Compare>
+bool
+priority_queue<T, Container, Compare>::empty() const
+{
+    return size() == 0;
+}
+template <class T, class Container, class Compare>
+typename priority_queue<T, Container, Compare>::size_type
+priority_queue<T, Container, Compare>::size() const
+{
+    return cont_.size();
+}
+
+//================================== modifiers ===============================//
+// push
+template <class T, class Container, class Compare>
+void
+priority_queue<T, Container, Compare>::push(const value_type& val)
+{
+    cont_.push_back(val);
+}
+template <class T, class Container, class Compare>
+void
+priority_queue<T, Container, Compare>::push(value_type&& val)
+{
+    cont_.push_back(move(val));
+}
+// emplace
+template <class T, class Container, class Compare>
+template <class... Args>
+void
+priority_queue<T, Container, Compare>::emplace(Args&&... args)
+{
+    cont_.emplace_back(forward<Args>(args)...);
+}
+// pop
+template <class T, class Container, class Compare>
+void
+priority_queue<T, Container, Compare>::pop()
+{
+}
+// swap
+template <class T, class Container, class Compare>
+void
+priority_queue<T, Container, Compare>::swap(priority_queue& other)
+{
+    swap(cont_, other.cont_);
+    swap(cmp_, other.cmp_);
+}
+
+//============================ non-member functions ==========================//
+template <class T, class Container, class Compare>
+void
+swap(priority_queue<T, Container, Compare>& lhs,
+     priority_queue<T, Container, Compare>& rhs)
+{
+    lhs.swap(rhs);
 }
 }
