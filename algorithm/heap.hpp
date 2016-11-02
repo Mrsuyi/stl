@@ -85,11 +85,62 @@ sort_heap(RandomIt first, RandomIt last, Compare cmp)
 }
 
 // make-heap
+template <class RandomIt, class Distance, class Compare>
+void
+__make_heap_aux(RandomIt first, Distance parent, Distance len, Compare cmp)
+{
+    while (true)
+    {
+        auto l = 2 * parent + 1;
+        auto r = 2 * parent + 2;
+
+        // reach the bottom
+        if (r >= len)
+        {
+            if (r == len && cmp(*(first + parent), *(first + l)))
+                swap(*(first + parent), *(first + l));
+            return;
+        }
+    
+        // parent < l
+        if (cmp(*(first + parent), *(first + l)))
+        {
+            // parent < l < r
+            if (cmp(*(first + l), *(first + r)))
+            {
+                swap(*(first + parent), *(first + r));
+                parent = r;
+            }
+            else
+            // parent/r < l
+            {
+                swap(*(first + parent), *(first + l));
+                parent = l;
+            }
+        }
+        // l < parent
+        else
+        {
+            // l < parent < r
+            if (cmp(*(first + parent), *(first + r)))
+            {
+                swap(*(first + parent), *(first + r));
+                parent = r;
+            }
+            else
+            // l/r < parent 
+            {
+                return;
+            }
+        }
+    }
+}
+
 template <class RandomIt>
 void
 make_heap(RandomIt first, RandomIt last)
 {
-    using T = typename RandomIt::value_type;
+    using T = typename iterator_traits<RandomIt>::value_type;
     make_heap(first, last,
               [](const T& lhs, const T& rhs) { return lhs < rhs; });
 }
@@ -97,5 +148,11 @@ template <class RandomIt, class Compare>
 void
 make_heap(RandomIt first, RandomIt last, Compare cmp)
 {
+    auto len = distance(first, last);
+    if (len < 2) return;
+
+    auto parent = (len - 2) / 2;
+
+    for (; parent >= 0; --parent) __make_heap_aux(first, parent, len, cmp);
 }
 }

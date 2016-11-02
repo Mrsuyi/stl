@@ -1,5 +1,6 @@
 #include <cassert>
 #include <iostream>
+#include <algorithm>
 #include <vector>
 #include "heap.hpp"
 
@@ -61,12 +62,24 @@ sort()
     assert(equal(a, {1, 2, 4, 5, 8}));
 }
 
+void
+make()
+{
+    int a[] = {1, 2, 3, 4, 5};
+    make_heap(a, a + 5);
+    print(a);
+}
+
 int
 main()
 {
     push();
     pop();
     sort();
+    make();
+
+/*    int a[] = {1, 2, 3};*/
+    //std::make_heap(a, a + 3);
 
     return 0;
 };
