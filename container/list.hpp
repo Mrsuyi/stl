@@ -207,25 +207,14 @@ public:
     using pointer = E*;
     using iterator_category = bidirectional_iterator_tag;
 
+    iter() : node_(nullptr) {}
     iter(node* ptr) : node_(ptr) {}
     iter(const iter& it) : node_(it.node_) {}
-    iter&
-    operator=(const iter& it)
-    {
-        node_ = it.node_;
-    }
+    iter& operator=(const iter& it) { node_ = it.node_; }
     E& operator*() const { return node_->t; }
     E* operator->() const { return &(node_->t); }
-    bool
-    operator==(const iter& it)
-    {
-        return node_ == it.node_;
-    }
-    bool
-    operator!=(const iter& it)
-    {
-        return node_ != it.node_;
-    }
+    bool operator==(const iter& it) { return node_ == it.node_; }
+    bool operator!=(const iter& it) { return node_ != it.node_; }
     iter& operator++()
     {
         node_ = node_->nxt;
@@ -233,8 +222,8 @@ public:
     }
     iter operator++(int)
     {
-        auto res = iter(node_);
-        node_ = node_->nxt;
+        auto res = *this;
+        ++*this;
         return res;
     }
     iter& operator--()
@@ -244,8 +233,8 @@ public:
     }
     iter operator--(int)
     {
-        auto res = iter(node_);
-        node_ = node_->pre;
+        auto res = *this;
+        --*this;
         return res;
     }
     operator iter<const E>() const { return iter<const E>(node_); }
@@ -256,8 +245,7 @@ private:
 // new/delete function
 template <class T, class Alloc>
 template <class... Args>
-typename list<T, Alloc>::node*
-list<T, Alloc>::new_node(Args... args)
+typename list<T, Alloc>::node* list<T, Alloc>::new_node(Args... args)
 {
     node* ptr = alloc_.allocate(1);
     alloc_.construct(ptr, forward<Args>(args)...);
@@ -854,9 +842,10 @@ void
 list<T, Alloc>::sort(Compare p)
 {
     if (size_ <= 1) return;
-   
+
     auto it = begin();
-    for (size_t i = 0; i < size_ / 2; ++i, ++it);
+    for (size_t i = 0; i < size_ / 2; ++i, ++it)
+        ;
     list tmp;
     tmp.splice(tmp.begin(), *this, begin(), it);
 
