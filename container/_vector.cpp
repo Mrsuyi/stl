@@ -1,7 +1,7 @@
-#include "vector.hpp"
 #include <cassert>
 #include <iostream>
 #include <vector>
+#include "vector.hpp"
 
 using namespace mrsuyi;
 using std::cout;
@@ -13,6 +13,16 @@ print(const T& t)
 {
     for (auto& ele : t) cout << ele << "  ";
     cout << endl;
+}
+
+template <class T, size_t N>
+bool
+equal(const vector<T>& vec, const T (&x)[N])
+{
+    if (vec.size() != N) return false;
+    for (size_t i = 0; i < N; ++i)
+        if (vec[i] != x[i]) return false;
+    return true;
 }
 
 struct shit
@@ -31,74 +41,46 @@ struct shit
 };
 
 void
-cmp()
-{
-    vector<int> v123 = {1, 2, 3};
-    vector<int> v12 = {1, 2};
-    vector<int> v122 = {1, 2, 2};
-
-    assert(v123 == vector<int>({1, 2, 3}));
-    assert(v123 != v12);
-    assert(v123 > v12);
-    assert(v123 >= v12);
-    assert(v12 < v123);
-    assert(v12 <= v123);
-
-    assert(v12 != v122);
-    assert(v123 > v122);
-    assert(v123 >= v122);
-    assert(v122 < v123);
-    assert(v122 <= v123);
-}
-
-void
-con_de()
+ctor_dtor()
 {
     // default
     vector<int> dft;
     // fill
     vector<int> fill_dft(1);
-    assert(fill_dft == vector<int>({0}));
+    assert(equal(fill_dft, {0}));
     vector<int> fill(3, 1);
-    assert(fill == vector<int>({1, 1, 1}));
+    assert(equal(fill, {1, 1, 1}));
     //// range
-    std::vector<int> src = {1, 2, 3};
-    vector<int> cmp = {1, 2, 3};
-    vector<int> range(src.begin(), src.end());
-    assert(range == cmp);
+    int data[] = {1, 2, 3};
+    vector<int> range(data, data + 3);
+    assert(equal(range, {1, 2, 3}));
     //// copy
-    vector<int> copy(range);
-    assert(copy == range);
+    vector<int> cp(range);
+    assert(equal(cp, {1, 2, 3}));
     //// move
-    vector<int> move(std::move(range));
-    assert(move == cmp);
-    // = copy
-    vector<int> oper_copy;
-    oper_copy = copy;
-    assert(oper_copy == copy);
-    // = move
-    vector<int> oper_move;
-    oper_move = (std::move(move));
-    assert(oper_move == cmp);
+    vector<int> mv(move(range));
+    assert(equal(mv, {1, 2, 3}));
+    vector<int> mv_from_rvalue(vector<int>({1, 2, 3}));
+    assert(equal(mv_from_rvalue, {1, 2, 3}));
     // = init
-    vector<int> oper_il;
-    oper_il = {1, 2, 3};
-    assert(oper_il == cmp);
+    vector<int> il = {1, 2, 3};
+    assert(equal(il, {1, 2, 3}));
 }
 
 void
 assign()
 {
-    using vec = vector<int>;
-    vec cmp = {1, 2, 3};
-
-    vec v = {1};
+    vector<int> v = { 1 };
+    // size, val
     v.assign(3, 1);
-    assert(v == vec({1, 1, 1}));
-    v.assign(cmp.begin(), cmp.end());
-    assert(v == cmp);
+    assert(equal(v, {1, 1, 1}));
+    // [first, last)
+    int data[] = {1, 2, 3};
+    v.assign(data, data + 3);
+    assert(equal(v, {1, 2, 3}));
+    // {initializer_list}
     v.assign({1, 2, 3});
-    assert(v == cmp);
+    assert(equal(v, {1, 2, 3}));
 }
 
 void
@@ -197,17 +179,7 @@ erase()
 int
 main()
 {
-    std::vector<int> std_vec;
-
-    vector<int> a;
-    vector<int> basic = {1, 2, 3};
-    assert(basic.size() == 3);
-    assert(basic[0] == 1);
-    assert(basic[1] == 2);
-    assert(basic[2] == 3);
-
-    cmp();
-    con_de();
+    ctor_dtor();
     assign();
 
     iter_rev();

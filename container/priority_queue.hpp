@@ -1,7 +1,8 @@
 #pragma once
 
-#include "functional.hpp"
+#include <iostream>
 #include "algorithm.hpp"
+#include "functional.hpp"
 #include "vector.hpp"
 
 namespace mrsuyi
@@ -28,17 +29,17 @@ public:
     // move
     priority_queue(priority_queue&&);
     // from alloc
-    //template <class Alloc>
-    //priority_queue(const Alloc&);
-    //template <class Alloc>
-    //priority_queue(const Compare&, const Alloc&);
-/*    template <class Alloc>*/
-    //priority_queue(const Compare&, const Container&, const Alloc&);
-    //template <class Alloc>
-    //priority_queue(const Compare&, Container&&, const Alloc&);
-    //template <class Alloc>
-    //priority_queue(const priority_queue&, const Alloc&);
-    //template <class Alloc>
+    // template <class Alloc>
+    // priority_queue(const Alloc&);
+    // template <class Alloc>
+    // priority_queue(const Compare&, const Alloc&);
+    /*    template <class Alloc>*/
+    // priority_queue(const Compare&, const Container&, const Alloc&);
+    // template <class Alloc>
+    // priority_queue(const Compare&, Container&&, const Alloc&);
+    // template <class Alloc>
+    // priority_queue(const priority_queue&, const Alloc&);
+    // template <class Alloc>
     /*priority_queue(priority_queue&&, const Alloc&);*/
     // range
     template <class InputIt>
@@ -107,48 +108,48 @@ priority_queue<T, Container, Compare>::priority_queue(priority_queue&& q)
 }
 // from alloc
 /*template <class T, class Container, class Compare>*/
-//template <class Alloc>
-//priority_queue<T, Container, Compare>::priority_queue(const Alloc& alloc)
-    //: cmp_(Compare()), cont_(alloc)
+// template <class Alloc>
+// priority_queue<T, Container, Compare>::priority_queue(const Alloc& alloc)
+//: cmp_(Compare()), cont_(alloc)
 //{
 //}
-//template <class T, class Container, class Compare>
-//template <class Alloc>
-//priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
-                                                      //const Alloc& alloc)
-    //: cmp_(cmp), cont_(alloc)
+// template <class T, class Container, class Compare>
+// template <class Alloc>
+// priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
+// const Alloc& alloc)
+//: cmp_(cmp), cont_(alloc)
 //{
 //}
-//template <class T, class Container, class Compare>
-//template <class Alloc>
-//priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
-                                                      //const Container& cont,
-                                                      //const Alloc& alloc)
-    //: cmp_(cmp), cont_(cont, alloc)
+// template <class T, class Container, class Compare>
+// template <class Alloc>
+// priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
+// const Container& cont,
+// const Alloc& alloc)
+//: cmp_(cmp), cont_(cont, alloc)
 //{
-    //make_heap(cont_.begin(), cont_.end(), cmp);
+// make_heap(cont_.begin(), cont_.end(), cmp);
 //}
-//template <class T, class Container, class Compare>
-//template <class Alloc>
-//priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
-                                                      //Container&& cont,
-                                                      //const Alloc& alloc)
-    //: cmp_(cmp), cont_(move(cont), alloc)
+// template <class T, class Container, class Compare>
+// template <class Alloc>
+// priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
+// Container&& cont,
+// const Alloc& alloc)
+//: cmp_(cmp), cont_(move(cont), alloc)
 //{
-    //make_heap(cont_.begin(), cont_.end(), cmp);
+// make_heap(cont_.begin(), cont_.end(), cmp);
 //}
-//template <class T, class Container, class Compare>
-//template <class Alloc>
-//priority_queue<T, Container, Compare>::priority_queue(
-    //const priority_queue& other, const Alloc& alloc)
-    //: cmp_(other.cmp_), cont_(other.cont_, alloc)
+// template <class T, class Container, class Compare>
+// template <class Alloc>
+// priority_queue<T, Container, Compare>::priority_queue(
+// const priority_queue& other, const Alloc& alloc)
+//: cmp_(other.cmp_), cont_(other.cont_, alloc)
 //{
 //}
-//template <class T, class Container, class Compare>
-//template <class Alloc>
-//priority_queue<T, Container, Compare>::priority_queue(priority_queue&& other,
-                                                      //const Alloc& alloc)
-    //: cmp_(other.cmp_), cont_(move(other.cont_), alloc)
+// template <class T, class Container, class Compare>
+// template <class Alloc>
+// priority_queue<T, Container, Compare>::priority_queue(priority_queue&& other,
+// const Alloc& alloc)
+//: cmp_(other.cmp_), cont_(move(other.cont_), alloc)
 //{
 /*}*/
 // range
@@ -253,8 +254,8 @@ template <class T, class Container, class Compare>
 void
 priority_queue<T, Container, Compare>::swap(priority_queue& other)
 {
-    swap(cont_, other.cont_);
-    swap(cmp_, other.cmp_);
+    mrsuyi::swap(cont_, other.cont_);
+    mrsuyi::swap(cmp_, other.cmp_);
 }
 
 //============================ non-member functions ==========================//

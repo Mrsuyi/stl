@@ -200,8 +200,7 @@ vector<T, Alloc>::vector(const vector& x, const Alloc& alloc) : alloc_(alloc)
 {
     reserve(x.size_);
     size_ = x.size_;
-    for (size_t i = 0; i < x.size_; ++i)
-        alloc_.construct(ptr_ + i, *(x.ptr_ + i));
+    for (size_t i = 0; i < x.size_; ++i) alloc_.construct(ptr_ + i, x.ptr_[i]);
 }
 // move
 template <class T, class Alloc>
@@ -214,6 +213,9 @@ vector<T, Alloc>::vector(vector&& x, const Alloc& alloc) : alloc_(alloc)
     ptr_ = x.ptr_;
     size_ = x.size_;
     capacity_ = x.capacity_;
+    x.ptr_ = nullptr;
+    x.size_ = 0;
+    x.capacity_ = 0;
 }
 // list
 template <class T, class Alloc>
@@ -268,6 +270,7 @@ void
 vector<T, Alloc>::assign(size_t n, const T& val)
 {
     clear();
+    reserve(n);
     for (size_t i = 0; i < n; ++i) alloc_.construct(ptr_ + i, val);
     size_ = n;
 }
