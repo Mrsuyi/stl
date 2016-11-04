@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstddef>
-#include <string>
+#include "string.hpp"
 #include "container/vector.hpp"
 #include "iterator.hpp"
 
@@ -64,7 +64,7 @@ public:
     int real_height() const;
     iterator root() const;
     // generate a tree-graph for console-print
-    std::string graph(std::string (*)(T)) const;
+    string graph(string (*)(T)) const;
 
 protected:
     Node* root_;
@@ -349,18 +349,18 @@ bst<T, Node, Compare>::root() const
     return iterator(root_);
 }
 template <class T, class Node, class Compare>
-std::string
-bst<T, Node, Compare>::graph(std::string (*to_string)(T)) const
+string
+bst<T, Node, Compare>::graph(string (*to_string)(T)) const
 {
     vector<Node*> nodes;
-    vector<vector<std::string>> vals;
+    vector<vector<string>> vals;
 
     if (root_) nodes.push_back(root_);
 
     while (!nodes.empty())
     {
         vector<Node*> tmp;
-        vals.push_back(vector<std::string>());
+        vals.push_back(vector<string>());
 
         for (auto& node : nodes)
         {
@@ -371,11 +371,11 @@ bst<T, Node, Compare>::graph(std::string (*to_string)(T)) const
         swap(nodes, tmp);
     }
 
-    std::string res;
+    string res;
 
     for (auto& row : vals)
     {
-        std::string line = "";
+        string line = "";
         for (auto& str : row)
         {
             line += str + "  ";

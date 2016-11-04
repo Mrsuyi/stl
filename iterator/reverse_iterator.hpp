@@ -94,7 +94,7 @@ typename reverse_iterator<Iterator>::reference reverse_iterator<Iterator>::
 operator*() const
 {
     auto tmp = it_;
-    return *(--tmp);
+    return *--tmp;
 }
 
 template <class Iterator>

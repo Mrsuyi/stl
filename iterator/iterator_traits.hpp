@@ -33,8 +33,8 @@ class iterator_traits<const T*>
 public:
     using value_type = T;
     using difference_type = std::ptrdiff_t;
-    using reference = T&;
-    using pointer = T*;
+    using reference = const T&;
+    using pointer = const T*;
     using iterator_category = random_access_iterator_tag;
 };
 

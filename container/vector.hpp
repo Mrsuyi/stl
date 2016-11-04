@@ -54,7 +54,7 @@ public:
     // copy
     vector(const vector& x);
     vector(const vector& x, const Alloc& alloc);
-    // mrsuyi::move
+    // move
     vector(vector&& x);
     vector(vector&& x, const Alloc& alloc);
     // list
@@ -113,18 +113,17 @@ public:
     // modifiers
     void clear();
 
-    iterator insert(const_iterator position, const T& val);
-    iterator insert(const_iterator position, T&& val);
-    void insert(const_iterator position, size_t n, const T& val);
+    iterator insert(const_iterator pos, const T& val);
+    iterator insert(const_iterator pos, T&& val);
+    void insert(const_iterator pos, size_t n, const T& val);
     template <class InputIterator>
-    void insert(const_iterator position, InputIterator first,
-                InputIterator last,
+    void insert(const_iterator pos, InputIterator first, InputIterator last,
                 typename std::enable_if<
                     !std::is_integral<InputIterator>::value>::type* = 0);
-    void insert(const_iterator position, std::initializer_list<T> il);
+    void insert(const_iterator pos, std::initializer_list<T> il);
 
     template <class... Args>
-    iterator emplace(const_iterator position, Args&&... args);
+    iterator emplace(const_iterator pos, Args&&... args);
 
     iterator erase(const_iterator pos);
     iterator erase(const_iterator first, const_iterator last);
@@ -202,9 +201,9 @@ vector<T, Alloc>::vector(const vector& x, const Alloc& alloc) : alloc_(alloc)
     size_ = x.size_;
     for (size_t i = 0; i < x.size_; ++i) alloc_.construct(ptr_ + i, x.ptr_[i]);
 }
-// mrsuyi::move
+// move
 template <class T, class Alloc>
-vector<T, Alloc>::vector(vector&& x) : vector(mrsuyi::move(x), Alloc())
+vector<T, Alloc>::vector(vector&& x) : vector(std::move(x), Alloc())
 {
 }
 template <class T, class Alloc>
@@ -243,7 +242,7 @@ template <class T, class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(vector&& x)
 {
-    vector(mrsuyi::move(x)).swap(*this);
+    vector(std::move(x)).swap(*this);
     return *this;
 }
 
@@ -488,50 +487,49 @@ vector<T, Alloc>::clear()
 // insert
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
-vector<T, Alloc>::insert(const_iterator position, const T& val)
+vector<T, Alloc>::insert(const_iterator pos, const T& val)
 {
-    difference_type diff = position - ptr_;
+    difference_type diff = pos - ptr_;
     ++size_;
     reserve(size_);
-    T* pos = ptr_ + diff;
+    pos = ptr_ + diff;
     memmove((void*)(pos + 1), (const void*)(pos),
             (size_ - (pos - ptr_ + 1)) * sizeof(T));
     alloc_.construct(pos, val);
-    return pos;
+    return const_cast<iterator>(pos);
 }
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
-vector<T, Alloc>::insert(const_iterator position, T&& val)
+vector<T, Alloc>::insert(const_iterator pos, T&& val)
 {
-    difference_type diff = position - ptr_;
+    difference_type diff = pos - ptr_;
     ++size_;
     reserve(size_);
-    T* pos = ptr_ + diff;
+    pos = ptr_ + diff;
     memmove((void*)(pos + 1), (const void*)(pos),
             (size_ - (pos - ptr_ + 1)) * sizeof(T));
-    alloc_.construct(pos, mrsuyi::move(val));
-    return pos;
+    alloc_.construct(pos, std::move(val));
+    return const_cast<iterator>(pos);
 }
 template <class T, class Alloc>
 void
-vector<T, Alloc>::insert(const_iterator position, size_t n, const T& val)
+vector<T, Alloc>::insert(const_iterator pos, size_t n, const T& val)
 {
-    difference_type diff = position - ptr_;
+    difference_type diff = pos - ptr_;
     size_ += n;
     reserve(size_);
-    T* pos = ptr_ + diff;
+    pos = ptr_ + diff;
     memmove((void*)(pos + n), (const void*)(pos),
-            (size_ - (pos - ptr_ + 1)) * sizeof(T));
+            (size_ - (pos - ptr_ + n)) * sizeof(T));
     for (size_t i = 0; i < n; ++i) alloc_.construct(pos + i, val);
 }
 template <class T, class Alloc>
 template <class InputIterator>
 void
 vector<T, Alloc>::insert(
-    const_iterator position, InputIterator first, InputIterator last,
+    const_iterator pos, InputIterator first, InputIterator last,
     typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
 {
-    iterator pos = ptr_ + (position - ptr_);
     for (; first != last; ++first) pos = insert(pos, *first) + 1;
 }
 template <class T, class Alloc>
@@ -544,27 +542,27 @@ vector<T, Alloc>::insert(const_iterator pos, std::initializer_list<T> il)
 template <class T, class Alloc>
 template <class... Args>
 typename vector<T, Alloc>::iterator
-vector<T, Alloc>::emplace(const_iterator position, Args&&... args)
+vector<T, Alloc>::emplace(const_iterator pos, Args&&... args)
 {
-    difference_type diff = position - ptr_;
+    difference_type diff = pos - ptr_;
     ++size_;
     reserve(size_);
-    T* pos = ptr_ + diff;
+    pos = ptr_ + diff;
     memmove((void*)(pos + 1), (const void*)(pos),
             (size_ - (pos - ptr_ + 1)) * sizeof(T));
-    alloc_.construct(pos, forward<Args>(args)...);
-    return pos;
+    alloc_.construct(pos, std::forward<Args>(args)...);
+    return const_cast<iterator>(pos);
 }
 // erase
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
-vector<T, Alloc>::erase(const_iterator position)
+vector<T, Alloc>::erase(const_iterator pos)
 {
-    alloc_.destroy(position);
-    memmove((void*)position, (const void*)(position + 1),
-            (size_ - (position - ptr_ + 1)) * sizeof(T));
+    alloc_.destroy(pos);
+    memmove((void*)pos, (const void*)(pos + 1),
+            (size_ - (pos - ptr_ + 1)) * sizeof(T));
     --size_;
-    return ptr_ + (position - ptr_);
+    return ptr_ + (pos - ptr_);
 }
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
@@ -587,7 +585,7 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::push_back(T&& val)
 {
-    emplace_back(mrsuyi::move(val));
+    emplace_back(std::move(val));
 }
 // emplace_back
 template <class T, class Alloc>
@@ -597,7 +595,7 @@ vector<T, Alloc>::emplace_back(Args&&... args)
 {
     ++size_;
     reserve(size_);
-    alloc_.construct(ptr_ + size_ - 1, forward<Args>(args)...);
+    alloc_.construct(ptr_ + size_ - 1, std::forward<Args>(args)...);
 }
 // pop_back
 template <class T, class Alloc>

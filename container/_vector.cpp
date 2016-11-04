@@ -1,37 +1,34 @@
 #include <cassert>
 #include <iostream>
-#include <string>
 #include <vector>
+#include "debug.hpp"
+#include "string.hpp"
 #include "vector.hpp"
 
 using namespace mrsuyi;
 using std::cout;
 using std::endl;
 
-template <class T>
-void
-print(const T& t)
-{
-    for (auto& ele : t) cout << ele << "  ";
-    cout << endl;
-}
-
-template <class T, size_t N>
-bool
-equal(const vector<T>& vec, const T (&x)[N])
-{
-    if (vec.size() != N) return false;
-    for (size_t i = 0; i < N; ++i)
-        if (vec[i] != x[i]) return false;
-    return true;
-}
-
 struct shit
 {
-    shit() { cout << "construct shit\n"; }
-    shit(const shit&) { cout << "construct copy\n"; }
-    shit(shit&&) { cout << "construct move\n"; }
-    ~shit() { cout << "destruct shit\n"; }
+    shit() : ptr(malloc(10)) {}
+    ~shit() { free(ptr); }
+    shit(shit&& s) : ptr(s.ptr) { s.ptr = nullptr; }
+    shit(const shit&) : ptr(malloc(10)) {}
+    shit& operator=(const shit&)
+    {
+        free(ptr);
+        ptr = malloc(10);
+        return *this;
+    }
+    shit& operator=(shit&& s)
+    {
+        free(ptr);
+        ptr = s.ptr;
+        s.ptr = nullptr;
+        return *this;
+    }
+
     void* operator new(size_t sz, void*)
     {
         cout << "placement new shit\n";
@@ -39,6 +36,7 @@ struct shit
     }
 
     void show() { cout << "shit\n"; }
+    void* ptr;
 };
 
 void
@@ -88,27 +86,10 @@ void
 iter()
 {
     // non-const
-    vector<int> v(10, 1);
-    int i = 0;
-    for (auto it = v.begin(); it != v.end(); ++it)
-    {
-        assert(*it == 1);
-        *it = ++i;
-    }
-    i = 0;
-    for (auto& val : v)
-    {
-        assert(val == ++i);
-        val *= 2;
-    }
-}
-
-void
-iter_rev()
-{
     vector<int> v = {1, 2, 3};
-    auto it = v.rbegin();
-    for (int i = 3; i >= 1; --i, ++it) assert(*it == i);
+    assert(equal(v, {1, 2, 3}));
+    vector<int> rv = {1, 2, 3};
+    assert(requal(rv, {3, 2, 1}));
 }
 
 void
@@ -133,35 +114,22 @@ insert()
     ++it;
     it = ints.insert(it, 10);
     ++it;
-    std::vector<int> ins = {1, 2, 3};
-    ints.insert(it, ins.begin(), ins.end());
+    auto il = {1, 2, 3};
+    ints.insert(it, il.begin(), il.end());
     it = ints.end();
     ints.insert(it, 2, 666);
 
-    assert(ints.size() == 8);
-    assert(ints[0] == 1);
-    assert(ints[1] == 10);
-    assert(ints[2] == 1);
-    assert(ints[3] == 2);
-    assert(ints[4] == 3);
-    assert(ints[5] == 1);
-    assert(ints[6] == 666);
-    assert(ints[7] == 666);
+    assert(equal(ints, {1, 10, 1, 2, 3, 1, 666, 666}));
 }
 
 void
 emplace()
 {
     vector<int> ints(2, 1);
-    auto it = ints.begin();
-    ++it;
-    ints.emplace(it, 10);
+    ints.emplace(ints.begin() + 1, 10);
     ints.emplace_back(20);
-    assert(ints.size() == 4);
-    assert(ints[0] == 1);
-    assert(ints[1] == 10);
-    assert(ints[2] == 1);
-    assert(ints[3] == 20);
+
+    assert(equal(ints, {1, 10, 1, 20}));
 }
 
 void
@@ -169,23 +137,57 @@ erase()
 {
     vector<int> v = {1, 2, 3, 4, 5};
     auto it = v.erase(v.begin());
-    assert(*it == 2);
+    assert(equal(v, {2, 3, 4, 5}));
     it = v.erase(it + 1, it + 3);
-    assert(*it == 5);
-    assert(v.size() == 2);
-    assert(v[0] == 2);
-    assert(v[1] == 5);
+    assert(equal(v, {2, 5}));
+}
+
+void
+swap()
+{
+    vector<int> a;
+    for (int i = 0; i < 5; ++i)
+    {
+        vector<int> tmp;
+        tmp.push_back(1);
+        tmp.push_back(2);
+        tmp.push_back(3);
+        swap(tmp, a);
+    }
+}
+
+void
+nest()
+{
+    vector<string> tmp;
+    vector<vector<string>> matrix;
+
+    for (int row = 0; row < 2; ++row)
+    {
+        matrix.push_back(tmp);
+        for (int col = 0; col < 2; ++col)
+        {
+            matrix.back().push_back(string());
+        }
+    }
 }
 
 int
 main()
 {
-    ctor_dtor();
-    assign();
+/*    ctor_dtor();*/
+    //assign();
+    //insert();
+    //emplace();
+    //erase();
+    //iter();
+    //swap();
+    nest();
 
-    iter_rev();
-
-    std::initializer_list<int> a = {1, 2, 3};
+/*    vector<string> tmp;*/
+    //vector<vector<string>> strss;
+    //strss.push_back(tmp);
+    //strss.back().push_back(string());
 
     return 0;
 };
