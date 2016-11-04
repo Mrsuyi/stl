@@ -1,6 +1,6 @@
 #=================================== config ==================================#
 CXX      := g++
-CXXFLAGS := -std=c++11
+CXXFLAGS := -std=c++11 -I..
 AR       := ar
 ARFLAGS  := crs
 MAKE     := make
@@ -11,26 +11,22 @@ MODS :=
 
 #================================== prepare ==================================#
 
-MAIN := $(patsubst %.cpp, %, $(wildcard main.cpp))
-TEST := $(patsubst _test/%.cpp, %, $(wildcard _test/*.cpp))
+MAIN := $(wildcard _*.cpp)
+EXE  := $(patsubst %.cpp, %, $(MAIN))
 
 LIBS := $(LIBS:%=%/_bin/lib.a)
 MODS := $(MODS:%=%/_bin/mod.a)
 
 ALL  := $(wildcard *.cpp) $(wildcard $(SUBS:%=%/**.cpp))
-SRCS := $(filter-out main.cpp, $(ALL)) 
+SRCS := $(filter-out $(MAIN), $(ALL)) 
 OBJS := $(patsubst %, _bin/%.o, $(basename $(SRCS)))
 DEPS := $(patsubst %, _bin/%.d, $(basename $(ALL) $(MAIN) $(TEST)))
 
 #==================================== exe ====================================#
 
-all: $(MAIN) $(TEST)
+all: $(EXE)
 
-main: _bin/main.o $(OBJS) $(MODS) $(LIBS)
-	@-mkdir -p _bin
-	$(CXX) $(CXXFLAGS) -o _bin/main.exe $^
-
-$(TEST): %: _bin/_test/%.o $(OBJS) $(MODS) $(LIBS)
+$(EXE): %: _bin/%.o $(OBJS) $(MODS) $(LIBS)
 	@-mkdir -p _bin
 	$(CXX) $(CXXFLAGS) -o _bin/$@.exe $^
 
@@ -78,4 +74,5 @@ _bin/%.d: ;
 .PHONY: clean
 clean:
 	rm -rf _bin
+
 
