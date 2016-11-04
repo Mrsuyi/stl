@@ -54,7 +54,7 @@ public:
     // copy
     vector(const vector& x);
     vector(const vector& x, const Alloc& alloc);
-    // move
+    // mrsuyi::move
     vector(vector&& x);
     vector(vector&& x, const Alloc& alloc);
     // list
@@ -202,9 +202,9 @@ vector<T, Alloc>::vector(const vector& x, const Alloc& alloc) : alloc_(alloc)
     size_ = x.size_;
     for (size_t i = 0; i < x.size_; ++i) alloc_.construct(ptr_ + i, x.ptr_[i]);
 }
-// move
+// mrsuyi::move
 template <class T, class Alloc>
-vector<T, Alloc>::vector(vector&& x) : vector(move(x), Alloc())
+vector<T, Alloc>::vector(vector&& x) : vector(mrsuyi::move(x), Alloc())
 {
 }
 template <class T, class Alloc>
@@ -243,7 +243,7 @@ template <class T, class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(vector&& x)
 {
-    vector(move(x)).swap(*this);
+    vector(mrsuyi::move(x)).swap(*this);
     return *this;
 }
 
@@ -509,7 +509,7 @@ vector<T, Alloc>::insert(const_iterator position, T&& val)
     T* pos = ptr_ + diff;
     memmove((void*)(pos + 1), (const void*)(pos),
             (size_ - (pos - ptr_ + 1)) * sizeof(T));
-    alloc_.construct(pos, move(val));
+    alloc_.construct(pos, mrsuyi::move(val));
     return pos;
 }
 template <class T, class Alloc>
@@ -587,7 +587,7 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::push_back(T&& val)
 {
-    emplace_back(move(val));
+    emplace_back(mrsuyi::move(val));
 }
 // emplace_back
 template <class T, class Alloc>

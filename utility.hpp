@@ -1,28 +1,29 @@
 #pragma once
 
-#include <type_traits>
+#include <cstddef>
+#include "type_traits.hpp"
 
 namespace mrsuyi
 {
 //=================================== move ===================================//
 template <class T>
-typename std::remove_reference<T>::type&&
+typename remove_reference<T>::type&&
 move(T&& arg) noexcept
 {
-    return static_cast<typename std::remove_reference<decltype(arg)>::type&&>(
+    return static_cast<typename remove_reference<decltype(arg)>::type&&>(
         arg);
 }
 
 //================================== forward =================================//
 template <class T>
 constexpr T&&
-forward(typename std::remove_reference<T>::type&& t)
+forward(typename remove_reference<T>::type&& t)
 {
     return static_cast<T&&>(t);
 }
 template <class T>
 constexpr T&&
-forward(typename std::remove_reference<T>::type& t)
+forward(typename remove_reference<T>::type& t)
 {
     return static_cast<T&&>(t);
 }
@@ -37,10 +38,10 @@ swap(T& a, T& b)
     b = move(c);
 }
 
-template <class T, std::size_t N>
+template <class T, size_t N>
 void swap(T (&a)[N], T (&b)[N])
 {
-    for (std::size_t i = 0; i < N; ++i) swap(a[i], b[i]);
+    for (size_t i = 0; i < N; ++i) swap(a[i], b[i]);
 }
 
 //=================================== pair ===================================//

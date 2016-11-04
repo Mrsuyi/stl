@@ -18,6 +18,7 @@ void
 insert()
 {
     auto t = make({3, 1, 1, 2, 2, 4, 5});
+    cout << t.graph(std::to_string) << endl;
     assert(equal(t, {1, 2, 3, 4, 5}));
     assert(requal(t, {5, 4, 3, 2, 1}));
 }

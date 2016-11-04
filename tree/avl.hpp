@@ -1,90 +1,21 @@
 #pragma once
 
 #include <cstdlib>
+#include "bst.hpp"
 #include "container/vector.hpp"
 #include "utility.hpp"
 
 namespace mrsuyi
 {
-template <class T, class Compare = less<T>>
-class avl
+template <class T>
+struct avl_node
 {
-    struct node;
-
-    template <class E>
-    class iter;
-    template <class E>
-    class riter;
-
-private:
-    // min node in tree
-    node* min() const;
-    // max node in tree
-    node* max() const;
-    // find
-    node* search(const T& t) const;
-    // balance node till root
-    void balance(node* n);
-    // spin
-    void spinl(node* parent);
-    void spinr(node* parent);
-
-public:
-    using iterator = iter<T>;
-    using const_iterator = iter<const T>;
-    using reverse_iterator = riter<T>;
-    using const_reverse_iterator = riter<const T>;
-
-    // ctor & dtor
-    avl(const Compare& = Compare());
-    ~avl();
-
-    // element access
-
-    // capacity
-    size_t size() const;
-    bool empty() const;
-
-    // iterators
-    iterator begin() noexcept;
-    iterator end() noexcept;
-    const_iterator end() const noexcept;
-    const_iterator begin() const noexcept;
-    const_iterator cbegin() const noexcept;
-    const_iterator cend() const noexcept;
-    reverse_iterator rbegin() noexcept;
-    reverse_iterator rend() noexcept;
-    const_reverse_iterator rbegin() const noexcept;
-    const_reverse_iterator rend() const noexcept;
-    const_reverse_iterator crbegin() const noexcept;
-    const_reverse_iterator crend() const noexcept;
-
-    // modifiers
-    iterator insert(const T&);
-    iterator insert(T&&);
-
-    iterator erase(const T&);
-    iterator erase(const_iterator);
-
-    // lookup
-    iterator find(const T&);
-    const_iterator find(const T&) const;
-
-private:
-    node* root_;
-    Compare cmp_;
-    size_t size_;
-};
-
-template <class T, class Compare>
-struct avl<T, Compare>::node
-{
-    node *l, *r, *parent;
+    avl_node *l, *r, *parent;
     int height;
     T t;
 
     template <class... Args>
-    node(Args... args)
+    avl_node(Args... args)
         : l(nullptr),
           r(nullptr),
           parent(nullptr),
@@ -94,127 +25,37 @@ struct avl<T, Compare>::node
     }
 };
 
-template <class T, class Compare>
-template <class E>
-class avl<T, Compare>::iter
+template <class T, class Compare = less<T>>
+class avl : public bst<T, avl_node<T>, Compare>
 {
-    friend class avl<T, Compare>;
-
-public:
-    using value_type = E;
-    using difference_type = size_t;
-    using reference = E&;
-    using pointer = E*;
-    using iterator_category = bidirectional_iterator_tag;
-
-    iter() : node_(nullptr) {}
-    iter(node* ptr) : node_(ptr) {}
-    iter(const iter& it) : node_(it.node_) {}
-    iter& operator=(const iter& it) { node_ = it.node_; }
-    E& operator*() const { return node_->t; }
-    E* operator->() const { return &(node_->t); }
-    bool operator==(const iter& it) { return node_ == it.node_; }
-    bool operator!=(const iter& it) { return node_ != it.node_; }
-    iter& operator++()
-    {
-        if (node_->r)
-        {
-            node_ = node_->r;
-            while (node_->l) node_ = node_->l;
-        }
-        else
-        {
-            auto old = node_;
-            do
-            {
-                old = node_;
-                node_ = node_->parent;
-            } while (node_ && node_->r == old);
-        }
-    }
-    iter operator++(int)
-    {
-        auto res = *this;
-        ++*this;
-        return res;
-    }
-    iter& operator--()
-    {
-        if (node_->l)
-        {
-            node_ = node_->l;
-            while (node_->r) node_ = node_->r;
-        }
-        else
-        {
-            auto old = node_;
-            do
-            {
-                old = node_;
-                node_ = node_->parent;
-            } while (node_ && node_->l == old);
-        }
-    }
-    iter operator--(int)
-    {
-        auto res = *this;
-        --*this;
-        return res;
-    }
-    operator iter<const E>() const { return iter<const E>(node_); }
 protected:
-    node* node_;
-};
+    using node = avl_node<T>;
+    using bst_t = bst<T, avl_node<T>, Compare>;
+    using iterator = typename bst_t::iterator;
+    using const_iterator = typename bst_t::const_iterator;
 
-template <class T, class Compare>
-template <class E>
-class avl<T, Compare>::riter : public iter<E>
-{
-    friend class avl<T, Compare>;
+    // balance node till root
+    void balance(node* n);
+    // spin
+    void spinl(node* parent);
+    void spinr(node* parent);
 
 public:
-    riter() : iter<E>() {}
-    riter(node* ptr) : iter<E>(ptr) {}
-    riter(const riter& it) : iter<E>(it) {}
-    riter& operator++() { iter<E>::operator--(); }
-    riter& operator--() { iter<E>::operator++(); }
-    operator riter<const E>() const { return riter<const E>(iter<E>::node_); }
+    // ctor & dtor
+    avl(const Compare& = Compare());
+    virtual ~avl() override;
+
+    // element access
+
+    // modifiers
+    iterator insert(const T&);
+    iterator insert(T&&);
+
+    iterator erase(const T&);
+    iterator erase(const_iterator);
 };
 
-//============================== private =================================//
-template <class T, class Compare>
-typename avl<T, Compare>::node*
-avl<T, Compare>::min() const
-{
-    if (!root_) return nullptr;
-    node* res = root_;
-    while (res->l) res = res->l;
-    return res;
-}
-template <class T, class Compare>
-typename avl<T, Compare>::node*
-avl<T, Compare>::max() const
-{
-    if (!root_) return nullptr;
-    node* res = root_;
-    while (res->r) res = res->r;
-    return res;
-}
-template <class T, class Compare>
-typename avl<T, Compare>::node*
-avl<T, Compare>::search(const T& t) const
-{
-    for (node* n = root_; n;)
-    {
-        if (cmp_(n->t, t))
-            n = n->r;
-        else if (cmp_(t, n->t))
-            n = n->l;
-        else
-            return n;
-    }
-    return nullptr;
-}
+//=============================== protected ==================================//
 template <class T, class Compare>
 void
 avl<T, Compare>::balance(node* n)
@@ -275,7 +116,7 @@ avl<T, Compare>::balance(node* n)
         {
             if (hl >= n->height)
             {
-                n->height = hl + 1;        
+                n->height = hl + 1;
                 n = n->parent;
             }
             else if (hr >= n->height)
@@ -321,42 +162,12 @@ avl<T, Compare>::spinr(node* parent)
 
 //============================== ctor & dtor =================================//
 template <class T, class Compare>
-avl<T, Compare>::avl(const Compare& cmp)
-    : root_(nullptr), cmp_(cmp), size_(0)
+avl<T, Compare>::avl(const Compare& cmp) : bst_t(cmp)
 {
 }
 template <class T, class Compare>
 avl<T, Compare>::~avl()
 {
-    vector<node*> dels;
-    dels.reserve(size_ / 2);
-    if (root_) dels.push_back(root_);
-
-    while (!dels.empty())
-    {
-        node* n = dels.back();
-        dels.pop_back();
-
-        if (n->l) dels.push_back(n->l);
-        if (n->r) dels.push_back(n->r);
-
-        delete n;
-    }
-}
-
-//================================ capacity ==================================//
-template <class T, class Compare>
-size_t
-avl<T, Compare>::size() const
-{
-    return size_;
-}
-
-template <class T, class Compare>
-bool
-avl<T, Compare>::empty() const
-{
-    return size() == 0;
 }
 
 //================================ modifiers =================================//
@@ -372,23 +183,23 @@ typename avl<T, Compare>::iterator
 avl<T, Compare>::insert(T&& t)
 {
     node* parent = nullptr;
-    node** mount = &root_;
+    node** mount = &(bst_t::root_);
 
     while (*mount)
     {
         parent = *mount;
 
-        if (cmp_(t, (*mount)->t))
+        if (bst_t::cmp_(t, (*mount)->t))
             mount = &((*mount)->l);
         else
             mount = &((*mount)->r);
     }
 
-    if (!parent || cmp_(t, parent->t) || cmp_(parent->t, t))
+    if (!parent || bst_t::cmp_(t, parent->t) || bst_t::cmp_(parent->t, t))
     {
         *mount = new node(move(t));
         (*mount)->parent = parent;
-        ++size_;
+        ++bst_t::size_;
     }
 }
 // erase
@@ -401,104 +212,5 @@ template <class T, class Compare>
 typename avl<T, Compare>::iterator
 avl<T, Compare>::erase(const_iterator it)
 {
-}
-
-//================================= iterators ================================//
-template <class T, class Compare>
-typename avl<T, Compare>::iterator
-avl<T, Compare>::begin() noexcept
-{
-    return iterator(min());
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::iterator
-avl<T, Compare>::end() noexcept
-{
-    return iterator(nullptr);
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::const_iterator
-avl<T, Compare>::begin() const noexcept
-{
-    return const_iterator(min());
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::const_iterator
-avl<T, Compare>::end() const noexcept
-{
-    return const_iterator(nullptr);
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::const_iterator
-avl<T, Compare>::cbegin() const noexcept
-{
-    return const_iterator(min());
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::const_iterator
-avl<T, Compare>::cend() const noexcept
-{
-    return const_iterator(nullptr);
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::reverse_iterator
-avl<T, Compare>::rbegin() noexcept
-{
-    return reverse_iterator(max());
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::reverse_iterator
-avl<T, Compare>::rend() noexcept
-{
-    return reverse_iterator(nullptr);
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::const_reverse_iterator
-avl<T, Compare>::rbegin() const noexcept
-{
-    return const_reverse_iterator(max());
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::const_reverse_iterator
-avl<T, Compare>::rend() const noexcept
-{
-    return const_reverse_iterator(nullptr);
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::const_reverse_iterator
-avl<T, Compare>::crbegin() const noexcept
-{
-    return const_reverse_iterator(max());
-}
-
-template <class T, class Compare>
-typename avl<T, Compare>::const_reverse_iterator
-avl<T, Compare>::crend() const noexcept
-{
-    return const_reverse_iterator(nullptr);
-}
-
-//================================= lookup ================================//
-template <class T, class Compare>
-typename avl<T, Compare>::iterator
-avl<T, Compare>::find(const T& t)
-{
-    return iterator(search(t));
-}
-template <class T, class Compare>
-typename avl<T, Compare>::const_iterator
-avl<T, Compare>::find(const T& t) const
-{
-    return const_iterator(search(t));
 }
 }

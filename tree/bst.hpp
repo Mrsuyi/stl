@@ -1,31 +1,39 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
+#include "container/vector.hpp"
 #include "iterator.hpp"
 
 namespace mrsuyi
 {
 template <class T, class Node, class Compare>
-class binary_search
+class bst
 {
+protected:
     template <class E>
     class iter;
     template <class E>
     class riter;
 
-protected:
     // min node in tree
     Node* min() const;
     // max node in tree
     Node* max() const;
     // find
     Node* search(const T& t) const;
+    // height
+    int height(Node* n) const;
 
 public:
     using iterator = iter<T>;
     using const_iterator = iter<const T>;
     using reverse_iterator = riter<T>;
     using const_reverse_iterator = riter<const T>;
+
+    // ctor & dtor
+    bst(const Compare& cmp);
+    virtual ~bst();
 
     // capacity
     size_t size() const;
@@ -49,6 +57,15 @@ public:
     iterator find(const T&);
     const_iterator find(const T&) const;
 
+    // mrsuyi-special-functions :D
+    // height recorded by root
+    int height() const;
+    // height calculated recursively
+    int real_height() const;
+    iterator root() const;
+    // generate a tree-graph for console-print
+    std::string graph(std::string (*)(T)) const;
+
 protected:
     Node* root_;
     Compare cmp_;
@@ -57,9 +74,9 @@ protected:
 
 template <class T, class Node, class Compare>
 template <class E>
-class binary_search<T, Node, Compare>::iter
+class bst<T, Node, Compare>::iter
 {
-    friend class binary_search<T, Node, Compare>;
+    friend class bst<T, Node, Compare>;
 
 public:
     using value_type = E;
@@ -129,9 +146,9 @@ protected:
 
 template <class T, class Node, class Compare>
 template <class E>
-class binary_search<T, Node, Compare>::riter : public iter<E>
+class bst<T, Node, Compare>::riter : public iter<E>
 {
-    friend class binary_search<T, Node, Compare>;
+    friend class bst<T, Node, Compare>;
 
 public:
     riter() : iter<E>() {}
@@ -145,7 +162,7 @@ public:
 //=============================== protected ==================================//
 template <class T, class Node, class Compare>
 Node*
-binary_search<T, Node, Compare>::min() const
+bst<T, Node, Compare>::min() const
 {
     if (!root_) return nullptr;
     Node* res = root_;
@@ -154,7 +171,7 @@ binary_search<T, Node, Compare>::min() const
 }
 template <class T, class Node, class Compare>
 Node*
-binary_search<T, Node, Compare>::max() const
+bst<T, Node, Compare>::max() const
 {
     if (!root_) return nullptr;
     Node* res = root_;
@@ -163,7 +180,7 @@ binary_search<T, Node, Compare>::max() const
 }
 template <class T, class Node, class Compare>
 Node*
-binary_search<T, Node, Compare>::search(const T& t) const
+bst<T, Node, Compare>::search(const T& t) const
 {
     for (Node* n = root_; n;)
     {
@@ -176,103 +193,196 @@ binary_search<T, Node, Compare>::search(const T& t) const
     }
     return nullptr;
 }
+template <class T, class Node, class Compare>
+int
+bst<T, Node, Compare>::height(Node* n) const
+{
+    if (!n) return 0;
+    return max(height(n->l), height(n->r)) + 1;
+}
+
+//============================== ctor & dtor =================================//
+template <class T, class Node, class Compare>
+bst<T, Node, Compare>::bst(const Compare& cmp)
+    : root_(nullptr), cmp_(cmp), size_(0)
+{
+}
+template <class T, class Node, class Compare>
+bst<T, Node, Compare>::~bst()
+{
+    vector<Node*> dels;
+    dels.reserve(size_ / 2);
+    if (root_) dels.push_back(root_);
+
+    while (!dels.empty())
+    {
+        Node* n = dels.back();
+        dels.pop_back();
+
+        if (n->l) dels.push_back(n->l);
+        if (n->r) dels.push_back(n->r);
+
+        delete n;
+    }
+}
+
+//================================ capacity ==================================//
+template <class T, class Node, class Compare>
+size_t
+bst<T, Node, Compare>::size() const
+{
+    return size_;
+}
+
+template <class T, class Node, class Compare>
+bool
+bst<T, Node, Compare>::empty() const
+{
+    return size() == 0;
+}
 
 //================================= iterators ================================//
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::iterator
-binary_search<T, Node, Compare>::begin() noexcept
+typename bst<T, Node, Compare>::iterator
+bst<T, Node, Compare>::begin() noexcept
 {
     return iterator(min());
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::iterator
-binary_search<T, Node, Compare>::end() noexcept
+typename bst<T, Node, Compare>::iterator
+bst<T, Node, Compare>::end() noexcept
 {
     return iterator(nullptr);
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_iterator
-binary_search<T, Node, Compare>::begin() const noexcept
+typename bst<T, Node, Compare>::const_iterator
+bst<T, Node, Compare>::begin() const noexcept
 {
     return const_iterator(min());
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_iterator
-binary_search<T, Node, Compare>::end() const noexcept
+typename bst<T, Node, Compare>::const_iterator
+bst<T, Node, Compare>::end() const noexcept
 {
     return const_iterator(nullptr);
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_iterator
-binary_search<T, Node, Compare>::cbegin() const noexcept
+typename bst<T, Node, Compare>::const_iterator
+bst<T, Node, Compare>::cbegin() const noexcept
 {
     return const_iterator(min());
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_iterator
-binary_search<T, Node, Compare>::cend() const noexcept
+typename bst<T, Node, Compare>::const_iterator
+bst<T, Node, Compare>::cend() const noexcept
 {
     return const_iterator(nullptr);
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::reverse_iterator
-binary_search<T, Node, Compare>::rbegin() noexcept
+typename bst<T, Node, Compare>::reverse_iterator
+bst<T, Node, Compare>::rbegin() noexcept
 {
     return reverse_iterator(max());
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::reverse_iterator
-binary_search<T, Node, Compare>::rend() noexcept
+typename bst<T, Node, Compare>::reverse_iterator
+bst<T, Node, Compare>::rend() noexcept
 {
     return reverse_iterator(nullptr);
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_reverse_iterator
-binary_search<T, Node, Compare>::rbegin() const noexcept
+typename bst<T, Node, Compare>::const_reverse_iterator
+bst<T, Node, Compare>::rbegin() const noexcept
 {
     return const_reverse_iterator(max());
 }
-
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_reverse_iterator
-binary_search<T, Node, Compare>::rend() const noexcept
+typename bst<T, Node, Compare>::const_reverse_iterator
+bst<T, Node, Compare>::rend() const noexcept
+{
+    return const_reverse_iterator(nullptr);
+}
+template <class T, class Node, class Compare>
+typename bst<T, Node, Compare>::const_reverse_iterator
+bst<T, Node, Compare>::crbegin() const noexcept
+{
+    return const_reverse_iterator(max());
+}
+template <class T, class Node, class Compare>
+typename bst<T, Node, Compare>::const_reverse_iterator
+bst<T, Node, Compare>::crend() const noexcept
 {
     return const_reverse_iterator(nullptr);
 }
 
+//================================== lookup ==================================//
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_reverse_iterator
-binary_search<T, Node, Compare>::crbegin() const noexcept
-{
-    return const_reverse_iterator(max());
-}
-
-template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_reverse_iterator
-binary_search<T, Node, Compare>::crend() const noexcept
-{
-    return const_reverse_iterator(nullptr);
-}
-
-//================================= lookup ================================//
-template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::iterator
-binary_search<T, Node, Compare>::find(const T& t)
+typename bst<T, Node, Compare>::iterator
+bst<T, Node, Compare>::find(const T& t)
 {
     return iterator(search(t));
 }
 template <class T, class Node, class Compare>
-typename binary_search<T, Node, Compare>::const_iterator
-binary_search<T, Node, Compare>::find(const T& t) const
+typename bst<T, Node, Compare>::const_iterator
+bst<T, Node, Compare>::find(const T& t) const
 {
     return const_iterator(search(t));
+}
+
+//======================== mrsuyi-special-functions :D =======================//
+template <class T, class Node, class Compare>
+int
+bst<T, Node, Compare>::height() const
+{
+    return root_->height;
+}
+template <class T, class Node, class Compare>
+int
+bst<T, Node, Compare>::real_height() const
+{
+    return height(root_);
+}
+template <class T, class Node, class Compare>
+typename bst<T, Node, Compare>::iterator
+bst<T, Node, Compare>::root() const
+{
+    return iterator(root_);
+}
+template <class T, class Node, class Compare>
+std::string
+bst<T, Node, Compare>::graph(std::string (*to_string)(T)) const
+{
+    vector<Node*> nodes;
+    vector<vector<std::string>> vals;
+
+    if (root_) nodes.push_back(root_);
+
+    while (!nodes.empty())
+    {
+        vector<Node*> tmp;
+        vals.push_back(vector<std::string>());
+
+        for (auto& node : nodes)
+        {
+            vals.back().push_back(to_string(node->t));
+            if (node->l) tmp.push_back(node->l);
+            if (node->r) tmp.push_back(node->r);
+        }
+        swap(nodes, tmp);
+    }
+
+    std::string res;
+
+    for (auto& row : vals)
+    {
+        std::string line = "";
+        for (auto& str : row)
+        {
+            line += str + "  ";
+        }
+        res += line + '\n';
+    }
+
+    return res;
 }
 }

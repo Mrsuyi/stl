@@ -1,5 +1,6 @@
 #include <cassert>
 #include <iostream>
+#include <string>
 #include <vector>
 #include "vector.hpp"
 
@@ -70,7 +71,7 @@ ctor_dtor()
 void
 assign()
 {
-    vector<int> v = { 1 };
+    vector<int> v = {1};
     // size, val
     v.assign(3, 1);
     assert(equal(v, {1, 1, 1}));
@@ -183,6 +184,8 @@ main()
     assign();
 
     iter_rev();
+
+    std::initializer_list<int> a = {1, 2, 3};
 
     return 0;
 };
