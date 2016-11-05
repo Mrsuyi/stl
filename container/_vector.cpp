@@ -172,6 +172,39 @@ nest()
     }
 }
 
+void
+nest2()
+{
+    vector<int> tmp;
+    vector<vector<int>> matrix;
+
+    for (int row = 0; row < 2; ++row)
+    {
+        matrix.push_back(tmp);
+        for (int col = 0; col < 2; ++col)
+        {
+            matrix.back().push_back(1);
+        }
+    }
+}
+
+void
+nest3()
+{
+    vector<shit> tmp;
+    vector<vector<shit>> matrix;
+
+    for (int row = 0; row < 2; ++row)
+    {
+        matrix.push_back(tmp);
+        for (int col = 0; col < 2; ++col)
+        {
+            matrix.back().push_back(shit());
+        }
+    }
+}
+
+
 int
 main()
 {
@@ -182,12 +215,14 @@ main()
     //erase();
     //iter();
     //swap();
-    nest();
+    //nest();
+    //nest2();
+    //nest3();
 
-/*    vector<string> tmp;*/
-    //vector<vector<string>> strss;
-    //strss.push_back(tmp);
-    //strss.back().push_back(string());
+    vector<vector<string>> strss;
+    strss.push_back(vector<string>());
+    strss[0].push_back(string());
+    strss[0].push_back(string());
 
     return 0;
 };

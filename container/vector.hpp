@@ -6,6 +6,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <stdexcept>
+#include "debug.hpp"
 
 #include "algorithm.hpp"
 #include "iterator.hpp"
