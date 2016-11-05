@@ -33,18 +33,19 @@ public:
     using const_reference = const T&;
     using size_type = size_t;
     using difference_type = ptrdiff_t;
-    
+
     template <class U>
     using other = allocator<U>;
 
-    // cons & des
+    // ctor & dtor
     allocator() noexcept;
     template <class U>
     allocator(const allocator<U>& alloc) noexcept;
     ~allocator() noexcept;
 
     // mem
-    pointer allocate(size_type n, allocator<void>::const_pointer hint = 0);
+    pointer allocate(size_type n,
+                     allocator<void>::const_pointer hint = nullptr);
     void deallocate(pointer p, size_type n);
 
     // cons & des
@@ -77,9 +78,9 @@ allocator<T>::~allocator() noexcept
 
 template <class T>
 typename allocator<T>::pointer
-allocator<T>::allocate(size_type n, allocator<void>::const_pointer hint)
+allocator<T>::allocate(size_type n, allocator<void>::const_pointer)
 {
-    return (pointer)realloc((void*)hint, n * sizeof(value_type));
+    return (pointer)malloc(n * sizeof(value_type));
 }
 
 template <class T>

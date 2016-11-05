@@ -4,6 +4,13 @@
 
 namespace mrsuyi
 {
+/*template <class InputIterator, class ForwardIterator>*/
+//ForwardIterator
+//__uninitialized_copy(InputIterator first, InputIterator last,
+        //ForwardIterator result, true_type)
+//{
+//}
+
 template <class InputIterator, class ForwardIterator>
 ForwardIterator
 uninitialized_copy(InputIterator first, InputIterator last,

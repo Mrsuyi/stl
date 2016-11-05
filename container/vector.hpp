@@ -35,8 +35,8 @@ public:
     using const_reverse_iterator = mrsuyi::reverse_iterator<const_iterator>;
 
 private:
-    // ensure capcity_ >= size (size > 0)
-    void realloc(size_t size);
+    // allocate a chunk of mem whose capcity >= size
+    T* alloc(size_t size);
 
 public:
     // ctor & dtor
@@ -148,13 +148,13 @@ protected:
 
 //================================ private ===================================//
 template <class T, class Alloc>
-void
-vector<T, Alloc>::realloc(size_t size)
+T*
+vector<T, Alloc>::alloc(size_t size)
 {
     capacity_ = 1U;
     for (; capacity_ < size; capacity_ *= 2)
         ;
-    ptr_ = alloc_.allocate(capacity_, ptr_);
+    return alloc_.allocate(capacity_);
 }
 
 //================================== basic ===================================//
@@ -458,7 +458,13 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::reserve(size_t size)
 {
-    if (size > capacity_) realloc(size);
+    if (size > capacity_)
+    {
+        auto ptr = alloc(size);
+
+        alloc_.destroy(ptr_);
+        ptr_ = ptr;
+    }
 }
 template <class T, class Alloc>
 size_t

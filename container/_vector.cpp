@@ -218,11 +218,11 @@ main()
     //nest();
     //nest2();
     //nest3();
-
-    vector<vector<string>> strss;
-    strss.push_back(vector<string>());
-    strss[0].push_back(string());
-    strss[0].push_back(string());
+    
+    std::vector<int> ints;
+    vector<string> strs;
+    strs.push_back(string());
+    strs.push_back(string());
 
     return 0;
 };
