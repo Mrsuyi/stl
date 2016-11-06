@@ -8,6 +8,14 @@ namespace mrsuyi
 using std::cout;
 using std::endl;
 
+struct shit
+{
+    shit() { cout << "shit-ctor-default\n"; }
+    shit(const shit&) { cout << "shit-ctor-copy\n"; }
+    shit(shit&&) { cout << "shit-ctor-move\n"; }
+    ~shit() { cout << "shit-dtor\n"; }
+};
+
 template <class Container, class T, size_t N>
 bool
 equal(const Container& cont, const T (&x)[N])

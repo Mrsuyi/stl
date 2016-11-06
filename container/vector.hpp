@@ -35,8 +35,12 @@ public:
     using const_reverse_iterator = mrsuyi::reverse_iterator<const_iterator>;
 
 private:
-    // allocate a chunk of mem whose capcity >= size
-    T* alloc(size_t size);
+    // allocate a mem whose size >= capacity
+    T* alloc_new(size_t size);
+    // move data from old mem to new mem & destory data on old mem
+    void move_old(T*);
+    // destory data on old mem
+    void destroy_old();
 
 public:
     // ctor & dtor
@@ -149,12 +153,24 @@ protected:
 //================================ private ===================================//
 template <class T, class Alloc>
 T*
-vector<T, Alloc>::alloc(size_t size)
+vector<T, Alloc>::alloc_new(size_t size)
 {
     capacity_ = 1U;
     for (; capacity_ < size; capacity_ *= 2)
         ;
     return alloc_.allocate(capacity_);
+}
+template <class T, class Alloc>
+void
+vector<T, Alloc>::move_old(T* new_mem)
+{
+    uninitialized_move(ptr_, size_, new_mem);
+}
+template <class T, class Alloc>
+void
+vector<T, Alloc>::destroy_old()
+{
+    for (size_t i = 0; i < size_; ++i) alloc_.destroy(ptr_ + i);
 }
 
 //================================== basic ===================================//
@@ -177,7 +193,7 @@ vector<T, Alloc>::vector(size_t n, const T& val, const Alloc& alloc)
     : alloc_(alloc)
 {
     reserve(n);
-    for (size_t i = 0; i < n; ++i) alloc_.construct(ptr_ + i, val);
+    uninitialized_fill(ptr_, n, val);
     size_ = n;
 }
 // range
@@ -227,7 +243,6 @@ vector<T, Alloc>::vector(std::initializer_list<T> il, const Alloc& alloc)
 template <class T, class Alloc>
 vector<T, Alloc>::~vector() noexcept
 {
-    for (size_t i = 0; i < size_; ++i) alloc_.destroy(ptr_ + i);
     alloc_.deallocate(ptr_, capacity_);
 }
 // ==
@@ -460,10 +475,11 @@ vector<T, Alloc>::reserve(size_t size)
 {
     if (size > capacity_)
     {
-        auto ptr = alloc(size);
-
-        alloc_.destroy(ptr_);
+        auto ptr = alloc_new(size);
+        move_old(ptr);
+        destroy_old();
         ptr_ = ptr;
+        capacity_ = size;
     }
 }
 template <class T, class Alloc>

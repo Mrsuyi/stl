@@ -149,4 +149,9 @@ operator-(const move_iterator<Iterator1>& lhs,
 }
 
 // make_reverse_iterator
+template <class Iterator>
+move_iterator<Iterator> make_move_iterator(Iterator it)
+{
+    return move_iterator<Iterator>(it);
+}
 }
