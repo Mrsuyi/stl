@@ -37,9 +37,9 @@ public:
 
     // get
     iterator_type base() const { return it_; }
-    reference operator*() const { return move(*it_); }
+    reference operator*() const { return mrsuyi::move(*it_); }
     pointer operator->() const { return it_; }
-    reference operator[](difference_type n) const { return move(it_[n]); }
+    reference operator[](difference_type n) const { return mrsuyi::move(it_[n]); }
     // set
     move_iterator operator+(difference_type n)
     {

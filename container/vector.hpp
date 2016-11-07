@@ -1,14 +1,14 @@
 #pragma once
 
-#include <climits>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
+#include <limits>
 #include <stdexcept>
-#include "debug.hpp"
 
 #include "algorithm.hpp"
+#include "debug.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
 #include "utility.hpp"
@@ -37,10 +37,8 @@ public:
 private:
     // allocate a mem whose size >= capacity
     T* alloc_new(size_t size);
-    // move data from old mem to new mem & destory data on old mem
-    void move_old(T*);
-    // destory data on old mem
-    void destroy_old();
+    // call dtor on old mem, set ptr_ to ptr, and free old mem
+    void reside_new(T* ptr);
 
 public:
     // ctor & dtor
@@ -151,26 +149,25 @@ protected:
 };
 
 //================================ private ===================================//
+// alloc new
 template <class T, class Alloc>
 T*
 vector<T, Alloc>::alloc_new(size_t size)
 {
+    if (size == 0) return nullptr;
     capacity_ = 1U;
     for (; capacity_ < size; capacity_ *= 2)
         ;
     return alloc_.allocate(capacity_);
 }
+// reside new
 template <class T, class Alloc>
 void
-vector<T, Alloc>::move_old(T* new_mem)
+vector<T, Alloc>::reside_new(T* ptr_new)
 {
-    uninitialized_move(ptr_, size_, new_mem);
-}
-template <class T, class Alloc>
-void
-vector<T, Alloc>::destroy_old()
-{
-    for (size_t i = 0; i < size_; ++i) alloc_.destroy(ptr_ + i);
+    destroy_n(ptr_, size_);
+    alloc_.deallocate(ptr_, size_);
+    ptr_ = ptr_new;
 }
 
 //================================== basic ===================================//
@@ -193,7 +190,7 @@ vector<T, Alloc>::vector(size_t n, const T& val, const Alloc& alloc)
     : alloc_(alloc)
 {
     reserve(n);
-    uninitialized_fill(ptr_, n, val);
+    mrsuyi::uninitialized_fill_n(ptr_, n, val);
     size_ = n;
 }
 // range
@@ -215,12 +212,12 @@ template <class T, class Alloc>
 vector<T, Alloc>::vector(const vector& x, const Alloc& alloc) : alloc_(alloc)
 {
     reserve(x.size_);
+    mrsuyi::uninitialized_copy(x.begin(), x.end(), ptr_);
     size_ = x.size_;
-    for (size_t i = 0; i < x.size_; ++i) alloc_.construct(ptr_ + i, x.ptr_[i]);
 }
 // move
 template <class T, class Alloc>
-vector<T, Alloc>::vector(vector&& x) : vector(std::move(x), Alloc())
+vector<T, Alloc>::vector(vector&& x) : vector(mrsuyi::move(x), Alloc())
 {
 }
 template <class T, class Alloc>
@@ -243,7 +240,7 @@ vector<T, Alloc>::vector(std::initializer_list<T> il, const Alloc& alloc)
 template <class T, class Alloc>
 vector<T, Alloc>::~vector() noexcept
 {
-    alloc_.deallocate(ptr_, capacity_);
+    reside_new(nullptr);
 }
 // ==
 template <class T, class Alloc>
@@ -258,7 +255,7 @@ template <class T, class Alloc>
 vector<T, Alloc>&
 vector<T, Alloc>::operator=(vector&& x)
 {
-    vector(std::move(x)).swap(*this);
+    vector(mrsuyi::move(x)).swap(*this);
     return *this;
 }
 
@@ -286,7 +283,7 @@ vector<T, Alloc>::assign(size_t n, const T& val)
 {
     clear();
     reserve(n);
-    for (size_t i = 0; i < n; ++i) alloc_.construct(ptr_ + i, val);
+    mrsuyi::uninitialized_fill_n(ptr_, n, val);
     size_ = n;
 }
 template <class T, class Alloc>
@@ -295,11 +292,8 @@ vector<T, Alloc>::assign(std::initializer_list<T> il)
 {
     clear();
     reserve(il.size());
-    for (auto it = il.begin(); it != il.end(); ++it)
-    {
-        alloc_.construct(ptr_ + size_, *it);
-        ++size_;
-    }
+    mrsuyi::uninitialized_copy(il.begin(), il.end(), ptr_);
+    size_ = il.size();
 }
 // get_allocator
 template <class T, class Alloc>
@@ -475,11 +469,9 @@ vector<T, Alloc>::reserve(size_t size)
 {
     if (size > capacity_)
     {
-        auto ptr = alloc_new(size);
-        move_old(ptr);
-        destroy_old();
-        ptr_ = ptr;
-        capacity_ = size;
+        auto new_ptr = alloc_new(size);
+        mrsuyi::uninitialized_move_n(ptr_, size_, new_ptr);
+        reside_new(new_ptr);
     }
 }
 template <class T, class Alloc>
@@ -492,10 +484,9 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::shrink_to_fit()
 {
-    if (size_ == 0)
-        alloc_.deallocate(ptr_, capacity_);
-    else
-        realloc(size_);
+    auto new_ptr = alloc_new(size_);
+    mrsuyi::uninitialized_move_n(ptr_, size_, new_ptr);
+    reside_new(new_ptr);
 }
 
 //================================ modifiers =================================//
@@ -504,7 +495,7 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::clear()
 {
-    for (size_t i = 0; i < size_; ++i) alloc_.destroy(ptr_ + i);
+    destroy_n(ptr_, size_);
     size_ = 0;
 }
 // insert
@@ -512,39 +503,42 @@ template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::insert(const_iterator pos, const T& val)
 {
-    difference_type diff = pos - ptr_;
-    ++size_;
-    reserve(size_);
-    pos = ptr_ + diff;
-    memmove((void*)(pos + 1), (const void*)(pos),
-            (size_ - (pos - ptr_ + 1)) * sizeof(T));
-    alloc_.construct(pos, val);
-    return const_cast<iterator>(pos);
+    return emplace(pos, val);
 }
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::insert(const_iterator pos, T&& val)
 {
-    difference_type diff = pos - ptr_;
-    ++size_;
-    reserve(size_);
-    pos = ptr_ + diff;
-    memmove((void*)(pos + 1), (const void*)(pos),
-            (size_ - (pos - ptr_ + 1)) * sizeof(T));
-    alloc_.construct(pos, std::move(val));
-    return const_cast<iterator>(pos);
+    return emplace(pos, mrsuyi::move(val));
 }
 template <class T, class Alloc>
 void
 vector<T, Alloc>::insert(const_iterator pos, size_t n, const T& val)
 {
-    difference_type diff = pos - ptr_;
-    size_ += n;
-    reserve(size_);
-    pos = ptr_ + diff;
-    memmove((void*)(pos + n), (const void*)(pos),
-            (size_ - (pos - ptr_ + n)) * sizeof(T));
-    for (size_t i = 0; i < n; ++i) alloc_.construct(pos + i, val);
+    auto dist = pos - ptr_;
+
+    if (size_ + n > capacity_)
+    {
+        auto new_ptr = alloc_new(size_ + n);
+
+        uninitialized_move(ptr_, ptr_ + dist, new_ptr);
+        destroy(ptr_, ptr_ + dist);
+
+        uninitialized_move(ptr_ + dist, ptr_ + size_, new_ptr + dist + n);
+        destory(ptr_ + dist, ptr_ + size_);
+
+        uninitialized_fill_n(new_ptr, n, val);
+
+        reside_new(new_ptr);
+        ++size_;
+        return const_cast<iterator>(pos);
+    }
+    else
+    {
+        // uninitialized_move(ptr_ + dist, ptr_ + size_, ptr_ + dist + 1);
+        // construct(ptr_ + dist, mrsuyi::forward<Args>(args)...);
+        //++size_;
+    }
 }
 template <class T, class Alloc>
 template <class InputIterator>
@@ -567,21 +561,37 @@ template <class... Args>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::emplace(const_iterator pos, Args&&... args)
 {
-    difference_type diff = pos - ptr_;
-    ++size_;
-    reserve(size_);
-    pos = ptr_ + diff;
-    memmove((void*)(pos + 1), (const void*)(pos),
-            (size_ - (pos - ptr_ + 1)) * sizeof(T));
-    alloc_.construct(pos, std::forward<Args>(args)...);
-    return const_cast<iterator>(pos);
+    auto dist = pos - ptr_;
+
+    if (size_ == capacity_)
+    {
+        auto new_ptr = alloc_new(size_ + 1);
+
+        uninitialized_move(ptr_, ptr_ + dist, new_ptr);
+        destory(ptr_, ptr_ + dist);
+
+        uninitialized_move(ptr_ + dist, ptr_ + size_, new_ptr + dist + 1);
+        destroy(ptr_ + dist, ptr_ + size_);
+
+        construct(new_ptr + dist, mrsuyi::forward<Args>(args)...);
+
+        reside_new(new_ptr);
+        ++size_;
+        return const_cast<iterator>(pos);
+    }
+    else
+    {
+        //uninitialized_move(ptr_ + dist, ptr_ + size_, ptr_ + dist + 1);
+        //construct(ptr_ + dist, mrsuyi::forward<Args>(args)...);
+        //++size_;
+    }
 }
 // erase
 template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::erase(const_iterator pos)
 {
-    alloc_.destroy(pos);
+    destroy_at(pos);
     memmove((void*)pos, (const void*)(pos + 1),
             (size_ - (pos - ptr_ + 1)) * sizeof(T));
     --size_;
@@ -591,7 +601,7 @@ template <class T, class Alloc>
 typename vector<T, Alloc>::iterator
 vector<T, Alloc>::erase(const_iterator first, const_iterator last)
 {
-    for (auto iter = first; iter != last; ++iter) alloc_.destroy(iter);
+    destroy(first, last);
     memmove((void*)first, (const void*)last,
             (size_ - (last - ptr_)) * sizeof(T));
     size_ -= last - first;
@@ -608,7 +618,7 @@ template <class T, class Alloc>
 void
 vector<T, Alloc>::push_back(T&& val)
 {
-    emplace_back(std::move(val));
+    emplace_back(mrsuyi::move(val));
 }
 // emplace_back
 template <class T, class Alloc>
@@ -616,9 +626,7 @@ template <class... Args>
 void
 vector<T, Alloc>::emplace_back(Args&&... args)
 {
-    ++size_;
-    reserve(size_);
-    alloc_.construct(ptr_ + size_ - 1, std::forward<Args>(args)...);
+    emplace(end(), mrsuyi::forward<Args>(args)...);
 }
 // pop_back
 template <class T, class Alloc>
@@ -626,7 +634,7 @@ void
 vector<T, Alloc>::pop_back()
 {
     --size_;
-    alloc_.destroy(ptr_ + size_);
+    destroy_at(ptr_ + size_);
 }
 // resize
 template <class T, class Alloc>
@@ -635,12 +643,12 @@ vector<T, Alloc>::resize(size_t size, T val)
 {
     if (size > size_)
     {
-        if (size > capacity_) realloc(size);
-        for (size_t i = size_; i < size; ++i) alloc_.construct(ptr_ + i, val);
+        reserve(size);
+        mrsuyi::uninitialized_fill_n(ptr_ + size_, size - size_, val);
     }
     else
     {
-        for (size_t i = size; i < size_; ++i) alloc_.destroy(ptr_ + i);
+        destroy_n(ptr_ + size, size_ - size);
     }
     size_ = size;
 }

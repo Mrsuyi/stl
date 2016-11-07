@@ -6,38 +6,6 @@
 #include "vector.hpp"
 
 using namespace mrsuyi;
-using std::cout;
-using std::endl;
-
-struct shit
-{
-    shit() : ptr(malloc(10)) {}
-    ~shit() { free(ptr); }
-    shit(shit&& s) : ptr(s.ptr) { s.ptr = nullptr; }
-    shit(const shit&) : ptr(malloc(10)) {}
-    shit& operator=(const shit&)
-    {
-        free(ptr);
-        ptr = malloc(10);
-        return *this;
-    }
-    shit& operator=(shit&& s)
-    {
-        free(ptr);
-        ptr = s.ptr;
-        s.ptr = nullptr;
-        return *this;
-    }
-
-    void* operator new(size_t sz, void*)
-    {
-        cout << "placement new shit\n";
-        return ::operator new(sz);
-    }
-
-    void show() { cout << "shit\n"; }
-    void* ptr;
-};
 
 void
 ctor_dtor()
@@ -49,11 +17,11 @@ ctor_dtor()
     assert(equal(fill_dft, {0}));
     vector<int> fill(3, 1);
     assert(equal(fill, {1, 1, 1}));
-    //// range
+    // range
     int data[] = {1, 2, 3};
     vector<int> range(data, data + 3);
     assert(equal(range, {1, 2, 3}));
-    //// copy
+    // copy
     vector<int> cp(range);
     assert(equal(cp, {1, 2, 3}));
     //// move
@@ -61,7 +29,7 @@ ctor_dtor()
     assert(equal(mv, {1, 2, 3}));
     vector<int> mv_from_rvalue(vector<int>({1, 2, 3}));
     assert(equal(mv_from_rvalue, {1, 2, 3}));
-    // = init
+    //// = init
     vector<int> il = {1, 2, 3};
     assert(equal(il, {1, 2, 3}));
 }
@@ -83,6 +51,29 @@ assign()
 }
 
 void
+capacity()
+{
+    vector<int> a;
+    assert(a.capacity() == 0 && a.size() == 0);
+    a.reserve(4);
+    assert(a.capacity() == 4 && a.size() == 0);
+    a.assign(4, 1);
+    assert(a.capacity() == 4 && a.size() == 4);
+    a.push_back(1);
+    assert(a.capacity() == 8 && a.size() == 5);
+    a.reserve(13);
+    assert(a.capacity() == 16 && a.size() == 5);
+    // resize
+    a.resize(10, 1);
+    assert(a.capacity() == 16 && a.size() == 10);
+    a.resize(5, 1);
+    assert(a.capacity() == 16 && a.size() == 5);
+    // shrink
+    a.shrink_to_fit();
+    assert(a.capacity() == 8 && a.size() == 5);
+}
+
+void
 iter()
 {
     // non-const
@@ -90,20 +81,6 @@ iter()
     assert(equal(v, {1, 2, 3}));
     vector<int> rv = {1, 2, 3};
     assert(requal(rv, {3, 2, 1}));
-}
-
-void
-mem()
-{
-    vector<int> ints;
-    printf("pushed=0, size=%lu, capacity=%lu\n", ints.size(), ints.capacity());
-
-    for (int i = 0; i < 17; ++i)
-    {
-        ints.push_back(i);
-        printf("pushed=%d, size=%lu, capacity=%lu\n", i + 1, ints.size(),
-               ints.capacity());
-    }
 }
 
 void
@@ -156,73 +133,42 @@ swap()
     }
 }
 
-void
-nest()
-{
-    vector<string> tmp;
-    vector<vector<string>> matrix;
+/*void*/
+// nest()
+//{
+// vector<string> tmp;
+// vector<vector<string>> matrix;
 
-    for (int row = 0; row < 2; ++row)
-    {
-        matrix.push_back(tmp);
-        for (int col = 0; col < 2; ++col)
-        {
-            matrix.back().push_back(string());
-        }
-    }
-}
-
-void
-nest2()
-{
-    vector<int> tmp;
-    vector<vector<int>> matrix;
-
-    for (int row = 0; row < 2; ++row)
-    {
-        matrix.push_back(tmp);
-        for (int col = 0; col < 2; ++col)
-        {
-            matrix.back().push_back(1);
-        }
-    }
-}
-
-void
-nest3()
-{
-    vector<shit> tmp;
-    vector<vector<shit>> matrix;
-
-    for (int row = 0; row < 2; ++row)
-    {
-        matrix.push_back(tmp);
-        for (int col = 0; col < 2; ++col)
-        {
-            matrix.back().push_back(shit());
-        }
-    }
-}
-
+// for (int row = 0; row < 2; ++row)
+//{
+// matrix.push_back(tmp);
+// for (int col = 0; col < 2; ++col)
+//{
+// matrix.back().push_back(string());
+//}
+//}
+/*}*/
 
 int
 main()
 {
-/*    ctor_dtor();*/
-    //assign();
-    //insert();
-    //emplace();
-    //erase();
-    //iter();
-    //swap();
-    //nest();
-    //nest2();
-    //nest3();
-    
+    ctor_dtor();
+    assign();
+    capacity();
+    iter();
+    // insert();
+    // emplace();
+    // erase();
+    // iter();
+    // swap();
+    // nest();
+    // nest2();
+    // nest3();
+
     std::vector<int> ints;
-    vector<string> strs;
-    strs.push_back(string());
-    strs.push_back(string());
+    // vector<string> strs;
+    // strs.push_back(string());
+    // strs.push_back(string());
 
     return 0;
 };

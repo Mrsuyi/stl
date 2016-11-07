@@ -13,6 +13,16 @@ struct shit
     shit() { cout << "shit-ctor-default\n"; }
     shit(const shit&) { cout << "shit-ctor-copy\n"; }
     shit(shit&&) { cout << "shit-ctor-move\n"; }
+    shit& operator=(const shit&)
+    {
+        cout << "shit = copy\n";
+        return *this;
+    }
+    shit& operator=(shit&&)
+    {
+        cout << "shit = move\n";
+        return *this;
+    }
     ~shit() { cout << "shit-dtor\n"; }
 };
 
