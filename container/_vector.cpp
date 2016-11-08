@@ -98,19 +98,18 @@ push_emplace()
 void
 insert()
 {
-/*    vector<int> ints(2, 1);*/
-    //ints.insert(ints.begin(), 1, 100);
-    //assert(equal(ints, {100, 1, 1}));
-    //assert(ints.capacity() == 4);
-    //ints.insert(ints.begin() + 2, 2, 100);
-    //print(ints);
-    //assert(equal(ints, {100, 1, 100, 100, 1}));
+    vector<int> ints(2, 1);
+    ints.insert(ints.begin(), 1, 100);
+    assert(equal(ints, {100, 1, 1}));
+    assert(ints.capacity() == 4);
+    ints.insert(ints.begin() + 2, 2, 100);
+    assert(equal(ints, {100, 1, 100, 100, 1}));
 
     // from range
-    /*    ints = {1, 4, 5};*/
-    // auto il = {2, 3};
-    // ints.insert(ints.begin() + 1, il.begin(), il.end());
-    // assert(equal(ints, {1, 2, 3, 4, 5}));
+    ints = {1, 4, 5};
+    auto il = {2, 3};
+    ints.insert(ints.begin() + 1, il.begin(), il.end());
+    assert(equal(ints, {1, 2, 3, 4, 5}));
 }
 
 void
@@ -126,15 +125,20 @@ erase()
 void
 swap()
 {
-    vector<int> a;
-    for (int i = 0; i < 5; ++i)
-    {
-        vector<int> tmp;
-        tmp.push_back(1);
-        tmp.push_back(2);
-        tmp.push_back(3);
-        swap(tmp, a);
-    }
+    vector<int> a = {1, 2, 3};
+    vector<int> b = {4, 5, 6};
+    a.swap(b);
+    assert(equal(a, {4, 5, 6}));
+    assert(equal(b, {1, 2, 3}));
+}
+
+void
+with_std()
+{
+    vector<string> strs;
+    strs.push_back("fuck");
+    strs.push_back("shit");
+    strs.push_back("damn");
 }
 
 int
@@ -146,16 +150,9 @@ main()
     iter();
     push_emplace();
     insert();
-    // erase();
-    // iter();
-    // swap();
+    erase();
+    swap();
 
-    /*    int a[] = {1, 2, 3};*/
-    // std::move_backward(a, a + 3, a + 1);
-     std::vector<int> ints;
-    // vector<string> strs;
-    // strs.push_back(string());
-    // strs.push_back(string());
 
     return 0;
 };

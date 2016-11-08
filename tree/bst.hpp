@@ -1,13 +1,27 @@
 #pragma once
 
 #include <cstddef>
-#include "string.hpp"
 #include "container/vector.hpp"
 #include "iterator.hpp"
+#include "memory.hpp"
+#include "string.hpp"
 
 namespace mrsuyi
 {
-template <class T, class Node, class Compare>
+template <class T>
+struct bst_node
+{
+    bst_node *l, *r, *parent;
+    T t;
+
+    template <class... Args>
+    bst_node(Args... args)
+        : l(nullptr), r(nullptr), parent(nullptr), t(forward<Args>(args)...)
+    {
+    }
+};
+
+template <class T, class Node = bst_node<T>, class Compare = mrsuyi::less<T>>
 class bst
 {
 protected:
@@ -16,6 +30,8 @@ protected:
     template <class E>
     class riter;
 
+    // find the proper insert position
+    void find_mount_pos(const T& t, Node**& _mount, Node*& _parent) const;
     // min node in tree
     Node* min() const;
     // max node in tree
@@ -33,6 +49,7 @@ public:
 
     // ctor & dtor
     bst(const Compare& cmp);
+    bst(Compare&& cmp = Compare());
     virtual ~bst();
 
     // capacity
@@ -52,6 +69,12 @@ public:
     const_reverse_iterator rend() const noexcept;
     const_reverse_iterator crbegin() const noexcept;
     const_reverse_iterator crend() const noexcept;
+
+    // modifiers
+    iterator insert(const T&);
+    iterator insert(T&&);
+    iterator erase(const T&);
+    iterator erase(const_iterator);
 
     // lookup
     iterator find(const T&);
@@ -161,6 +184,25 @@ public:
 
 //=============================== protected ==================================//
 template <class T, class Node, class Compare>
+void
+bst<T, Node, Compare>::find_mount_pos(const T& t, Node**& _mount,
+                                      Node*& _parent) const
+{
+    while (_parent)
+    {
+        if (cmp_(_parent->t, t))
+        {
+            _mount = &(_parent->r);
+            _parent = _parent->r;
+        }
+        else if (cmp_(t, _parent->t))
+        {
+            _mount = &(_parent->l);
+            _parent = _parent->l;
+        }
+    }
+}
+template <class T, class Node, class Compare>
 Node*
 bst<T, Node, Compare>::min() const
 {
@@ -205,6 +247,11 @@ bst<T, Node, Compare>::height(Node* n) const
 template <class T, class Node, class Compare>
 bst<T, Node, Compare>::bst(const Compare& cmp)
     : root_(nullptr), cmp_(cmp), size_(0)
+{
+}
+template <class T, class Node, class Compare>
+bst<T, Node, Compare>::bst(Compare&& cmp)
+    : root_(nullptr), cmp_(mrsuyi::move(cmp)), size_(0)
 {
 }
 template <class T, class Node, class Compare>
@@ -329,6 +376,28 @@ bst<T, Node, Compare>::find(const T& t) const
     return const_iterator(search(t));
 }
 
+//=============================== modifiers ==================================//
+template <class T, class Node, class Compare>
+typename bst<T, Node, Compare>::iterator
+bst<T, Node, Compare>::insert(const T& t)
+{
+    Node** mount = nullptr;
+    Node* parent = root_;
+    find_mount_pos(t, mount, parent);
+    *mount = new Node(t);
+    (*mount)->parent = parent;
+}
+template <class T, class Node, class Compare>
+typename bst<T, Node, Compare>::iterator
+bst<T, Node, Compare>::insert(T&& t)
+{
+    Node** mount = nullptr;
+    Node* parent = root_;
+    find_mount_pos(t, mount, parent);
+    *mount = new Node(mrsuyi::move(t));
+    (*mount)->parent = parent;
+}
+
 //======================== mrsuyi-special-functions :D =======================//
 template <class T, class Node, class Compare>
 int
@@ -349,8 +418,7 @@ bst<T, Node, Compare>::root() const
     return iterator(root_);
 }
 template <class T, class Node, class Compare>
-string
-bst<T, Node, Compare>::graph(string (*to_string)(T)) const
+string bst<T, Node, Compare>::graph(string (*to_string)(T)) const
 {
     vector<Node*> nodes;
     vector<vector<string>> vals;

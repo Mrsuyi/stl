@@ -25,7 +25,7 @@ struct avl_node
     }
 };
 
-template <class T, class Compare = less<T>>
+template <class T, class Compare = mrsuyi::less<T>>
 class avl : public bst<T, avl_node<T>, Compare>
 {
 protected:
@@ -50,7 +50,6 @@ public:
     // modifiers
     iterator insert(const T&);
     iterator insert(T&&);
-
     iterator erase(const T&);
     iterator erase(const_iterator);
 };
@@ -182,8 +181,8 @@ template <class T, class Compare>
 typename avl<T, Compare>::iterator
 avl<T, Compare>::insert(T&& t)
 {
-    node* parent = nullptr;
     node** mount = &(bst_t::root_);
+    node* parent = nullptr;
 
     while (*mount)
     {

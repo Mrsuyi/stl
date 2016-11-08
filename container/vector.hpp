@@ -54,8 +54,8 @@ public:
     template <class InputIterator>
     vector(InputIterator first, InputIterator last,
            const Alloc& alloc = Alloc(),
-           typename std::enable_if<
-               !std::is_integral<InputIterator>::value>::type* = 0);
+           typename mrsuyi::enable_if<
+               !mrsuyi::is_integral<InputIterator>::value>::type* = 0);
     // copy
     vector(const vector& x);
     vector(const vector& x, const Alloc& alloc);
@@ -74,8 +74,8 @@ public:
 
     template <class InputIterator>
     void assign(InputIterator first, InputIterator last,
-                typename std::enable_if<
-                    !std::is_integral<InputIterator>::value>::type* = 0);
+                typename mrsuyi::enable_if<
+                    !mrsuyi::is_integral<InputIterator>::value>::type* = 0);
     void assign(size_t n, const T& val);
     void assign(std::initializer_list<T> il);
 
@@ -123,8 +123,8 @@ public:
     void insert(const_iterator pos, size_t n, const T& val);
     template <class InputIterator>
     void insert(const_iterator pos, InputIterator first, InputIterator last,
-                typename std::enable_if<
-                    !std::is_integral<InputIterator>::value>::type* = 0);
+                typename mrsuyi::enable_if<
+                    !mrsuyi::is_integral<InputIterator>::value>::type* = 0);
     void insert(const_iterator pos, std::initializer_list<T> il);
 
     template <class... Args>
@@ -232,9 +232,10 @@ vector<T, Alloc>::vector(size_t n, const T& val, const Alloc& alloc)
 // range
 template <class T, class Alloc>
 template <class InputIterator>
-vector<T, Alloc>::vector(
-    InputIterator first, InputIterator last, const Alloc& alloc,
-    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+vector<T, Alloc>::vector(InputIterator first, InputIterator last,
+                         const Alloc& alloc,
+                         typename mrsuyi::enable_if<
+                             !mrsuyi::is_integral<InputIterator>::value>::type*)
     : alloc_(alloc)
 {
     for (; first != last; ++first) push_back(*first);
@@ -308,9 +309,9 @@ vector<T, Alloc>::operator=(std::initializer_list<T> il)
 template <class T, class Alloc>
 template <class InputIterator>
 void
-vector<T, Alloc>::assign(
-    InputIterator first, InputIterator last,
-    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+vector<T, Alloc>::assign(InputIterator first, InputIterator last,
+                         typename mrsuyi::enable_if<
+                             !mrsuyi::is_integral<InputIterator>::value>::type*)
 {
     clear();
     for (; first != last; ++first) push_back(*first);
@@ -554,9 +555,10 @@ vector<T, Alloc>::insert(const_iterator pos, size_t n, const T& val)
 template <class T, class Alloc>
 template <class InputIterator>
 void
-vector<T, Alloc>::insert(
-    const_iterator pos, InputIterator first, InputIterator last,
-    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+vector<T, Alloc>::insert(const_iterator pos, InputIterator first,
+                         InputIterator last,
+                         typename mrsuyi::enable_if<
+                             !mrsuyi::is_integral<InputIterator>::value>::type*)
 {
     for (; first != last; ++first) pos = insert(pos, *first) + 1;
 }

@@ -2,9 +2,7 @@
 
 #include <cstddef>
 #include <cstdlib>
-#include <cstring>
 #include <initializer_list>
-#include <iostream>
 #include <limits>
 #include <stdexcept>
 
@@ -23,7 +21,8 @@ class list
         T t;
 
         template <class... Args>
-        node(Args&&... args) : pre(this), nxt(this), t(forward<Args>(args)...)
+        node(Args&&... args)
+            : pre(this), nxt(this), t(mrsuyi::forward<Args>(args)...)
         {
         }
     };
@@ -62,8 +61,8 @@ public:
     template <class InputIterator>
     list(InputIterator first, InputIterator last,
          const allocator_type& alloc = allocator_type(),
-         typename std::enable_if<
-             !std::is_integral<InputIterator>::value>::type* = 0);
+         typename mrsuyi::enable_if<
+             !mrsuyi::is_integral<InputIterator>::value>::type* = 0);
     // copy
     list(const list& x);
     list(const list& x, const allocator_type& alloc);
@@ -82,8 +81,8 @@ public:
     // assign
     template <class InputIterator>
     void assign(InputIterator first, InputIterator last,
-                typename std::enable_if<
-                    !std::is_integral<InputIterator>::value>::type* = 0);
+                typename mrsuyi::enable_if<
+                    !mrsuyi::is_integral<InputIterator>::value>::type* = 0);
     void assign(size_t n, const T& val);
     void assign(std::initializer_list<T> il);
     // alloc
@@ -140,8 +139,8 @@ public:
     void insert(const_iterator pos, size_t n, const T& val);
     template <class InputIterator>
     void insert(const_iterator pos, InputIterator first, InputIterator last,
-                typename std::enable_if<
-                    !std::is_integral<InputIterator>::value>::type* = 0);
+                typename mrsuyi::enable_if<
+                    !mrsuyi::is_integral<InputIterator>::value>::type* = 0);
     iterator erase(const_iterator pos);
     iterator erase(const_iterator first, const_iterator last);
 
@@ -247,14 +246,14 @@ template <class... Args>
 typename list<T, Alloc>::node* list<T, Alloc>::new_node(Args... args)
 {
     node* ptr = alloc_.allocate(1);
-    alloc_.construct(ptr, forward<Args>(args)...);
+    mrsuyi::construct(ptr, mrsuyi::forward<Args>(args)...);
     return ptr;
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::del_node(node* ptr)
 {
-    alloc_.destroy(ptr);
+    mrsuyi::destroy_at(ptr);
     alloc_.deallocate(ptr, 1);
 }
 // node/size manipulations
@@ -326,9 +325,10 @@ list<T, Alloc>::list(size_t n, const T& val, const allocator_type& alloc)
 // range
 template <class T, class Alloc>
 template <class InputIterator>
-list<T, Alloc>::list(
-    InputIterator first, InputIterator last, const allocator_type& alloc,
-    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+list<T, Alloc>::list(InputIterator first, InputIterator last,
+                     const allocator_type& alloc,
+                     typename mrsuyi::enable_if<
+                         !mrsuyi::is_integral<InputIterator>::value>::type*)
     : list(alloc)
 {
     for (; first != last; ++first) push_back(*first);
@@ -345,7 +345,7 @@ list<T, Alloc>::list(const list& x, const allocator_type& alloc)
 }
 // move
 template <class T, class Alloc>
-list<T, Alloc>::list(list&& x) : list(move(x), allocator_type())
+list<T, Alloc>::list(list&& x) : list(mrsuyi::move(x), allocator_type())
 {
 }
 template <class T, class Alloc>
@@ -357,7 +357,8 @@ list<T, Alloc>::list(list&& x, const allocator_type& alloc)
 }
 // list
 template <class T, class Alloc>
-list<T, Alloc>::list(std::initializer_list<T> il, const allocator_type& alloc)
+list<T, Alloc>::list(std::initializer_list<T> il,
+                     const allocator_type& alloc)
     : list(il.begin(), il.end(), alloc)
 {
 }
@@ -384,7 +385,7 @@ template <class T, class Alloc>
 list<T, Alloc>&
 list<T, Alloc>::operator=(list&& x)
 {
-    list(move(x)).swap(*this);
+    list(mrsuyi::move(x)).swap(*this);
 }
 template <class T, class Alloc>
 list<T, Alloc>&
@@ -396,9 +397,9 @@ list<T, Alloc>::operator=(std::initializer_list<T> il)
 template <class T, class Alloc>
 template <class InputIterator>
 void
-list<T, Alloc>::assign(
-    InputIterator first, InputIterator last,
-    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+list<T, Alloc>::assign(InputIterator first, InputIterator last,
+                       typename mrsuyi::enable_if<
+                           !mrsuyi::is_integral<InputIterator>::value>::type*)
 {
     list(first, last).swap(*this);
 }
@@ -595,7 +596,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(T&& val)
 {
-    insert(joint_->nxt, new_node(move(val)));
+    insert(joint_->nxt, new_node(mrsuyi::move(val)));
 }
 template <class T, class Alloc>
 void
@@ -607,7 +608,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(T&& val)
 {
-    insert(joint_, new_node(move(val)));
+    insert(joint_, new_node(mrsuyi::move(val)));
 }
 template <class T, class Alloc>
 void
@@ -628,21 +629,22 @@ template <class... Args>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::emplace(const_iterator pos, Args&&... args)
 {
-    return iterator(insert(pos.node_, new_node(forward<Args>(args)...)));
+    return iterator(
+        insert(pos.node_, new_node(mrsuyi::forward<Args>(args)...)));
 }
 template <class T, class Alloc>
 template <class... Args>
 void
 list<T, Alloc>::emplace_back(Args&&... args)
 {
-    insert(joint_, new_node(forward<Args>(args)...));
+    insert(joint_, new_node(mrsuyi::forward<Args>(args)...));
 }
 template <class T, class Alloc>
 template <class... Args>
 void
 list<T, Alloc>::emplace_front(Args&&... args)
 {
-    insert(joint_->nxt, new_node(forward<Args>(args)...));
+    insert(joint_->nxt, new_node(mrsuyi::forward<Args>(args)...));
 }
 
 // insert/erase
@@ -656,7 +658,7 @@ template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, T&& val)
 {
-    return iterator(insert(pos.node_, new_node(move(val))));
+    return iterator(insert(pos.node_, new_node(mrsuyi::move(val))));
 }
 template <class T, class Alloc>
 void
@@ -667,9 +669,10 @@ list<T, Alloc>::insert(const_iterator pos, size_t n, const T& val)
 template <class T, class Alloc>
 template <class InputIterator>
 void
-list<T, Alloc>::insert(
-    const_iterator pos, InputIterator first, InputIterator last,
-    typename std::enable_if<!std::is_integral<InputIterator>::value>::type*)
+list<T, Alloc>::insert(const_iterator pos, InputIterator first,
+                       InputIterator last,
+                       typename mrsuyi::enable_if<
+                           !mrsuyi::is_integral<InputIterator>::value>::type*)
 {
     for (; first != last; ++first) insert(pos.node_, new_node(*first));
 }
@@ -692,7 +695,8 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::merge(list&& other)
 {
-    merge(move(other), [](const T& lhs, const T& rhs) { return lhs < rhs; });
+    merge(mrsuyi::move(other),
+          [](const T& lhs, const T& rhs) { return lhs < rhs; });
 }
 template <class T, class Alloc>
 template <class Compare>
@@ -741,7 +745,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::splice(const_iterator pos, list& other)
 {
-    splice(pos, move(other));
+    splice(pos, mrsuyi::move(other));
 }
 template <class T, class Alloc>
 void
@@ -757,7 +761,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::splice(const_iterator pos, list& other, const_iterator it)
 {
-    splice(pos, move(other), it);
+    splice(pos, mrsuyi::move(other), it);
 }
 template <class T, class Alloc>
 void
@@ -770,7 +774,7 @@ void
 list<T, Alloc>::splice(const_iterator pos, list& other, const_iterator first,
                        const_iterator last)
 {
-    splice(pos, move(other), first, last);
+    splice(pos, mrsuyi::move(other), first, last);
 }
 template <class T, class Alloc>
 void
@@ -851,7 +855,7 @@ list<T, Alloc>::sort(Compare p)
     tmp.sort(p);
     sort();
 
-    merge(move(tmp), p);
+    merge(mrsuyi::move(tmp), p);
 }
 
 // non-member functions

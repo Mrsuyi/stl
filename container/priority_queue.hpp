@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include "algorithm.hpp"
 #include "functional.hpp"
 #include "vector.hpp"
@@ -26,7 +25,7 @@ public:
                             Container&& = Container());
     // copy
     priority_queue(const priority_queue&);
-    // move
+    // mrsuyi::move
     priority_queue(priority_queue&&);
     // from alloc
     // template <class Alloc>
@@ -90,20 +89,20 @@ priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
 template <class T, class Container, class Compare>
 priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
                                                       Container&& cont)
-    : cmp_(cmp), cont_(move(cont))
+    : cmp_(cmp), cont_(mrsuyi::move(cont))
 {
     make_heap(cont_.begin(), cont_.end(), cmp);
 }
 // copy
 template <class T, class Container, class Compare>
 priority_queue<T, Container, Compare>::priority_queue(const priority_queue& q)
-    : cmp_(move(q.cmp_)), cont_(q.cont_)
+    : cmp_(mrsuyi::move(q.cmp_)), cont_(q.cont_)
 {
 }
-// move
+// mrsuyi::move
 template <class T, class Container, class Compare>
 priority_queue<T, Container, Compare>::priority_queue(priority_queue&& q)
-    : cmp_(move(q.cmp_)), cont_(move(q.cont_))
+    : cmp_(mrsuyi::move(q.cmp_)), cont_(mrsuyi::move(q.cont_))
 {
 }
 // from alloc
@@ -134,7 +133,7 @@ priority_queue<T, Container, Compare>::priority_queue(priority_queue&& q)
 // priority_queue<T, Container, Compare>::priority_queue(const Compare& cmp,
 // Container&& cont,
 // const Alloc& alloc)
-//: cmp_(cmp), cont_(move(cont), alloc)
+//: cmp_(cmp), cont_(mrsuyi::move(cont), alloc)
 //{
 // make_heap(cont_.begin(), cont_.end(), cmp);
 //}
@@ -149,7 +148,7 @@ priority_queue<T, Container, Compare>::priority_queue(priority_queue&& q)
 // template <class Alloc>
 // priority_queue<T, Container, Compare>::priority_queue(priority_queue&& other,
 // const Alloc& alloc)
-//: cmp_(other.cmp_), cont_(move(other.cont_), alloc)
+//: cmp_(other.cmp_), cont_(mrsuyi::move(other.cont_), alloc)
 //{
 /*}*/
 // range
@@ -170,7 +169,7 @@ priority_queue<T, Container, Compare>::priority_queue(InputIt first,
                                                       InputIt last,
                                                       const Compare& cmp,
                                                       Container&& cont)
-    : cmp_(cmp), cont_(move(cont))
+    : cmp_(cmp), cont_(mrsuyi::move(cont))
 {
     cont_.insert(cont_.end(), first, last);
     make_heap(cont_.begin(), cont_.end(), cmp);
@@ -191,7 +190,7 @@ template <class T, class Container, class Compare>
 priority_queue<T, Container, Compare>&
 priority_queue<T, Container, Compare>::operator=(priority_queue&& other)
 {
-    priority_queue(move(other)).swap(*this);
+    priority_queue(mrsuyi::move(other)).swap(*this);
 }
 
 //================================ element access ============================//
@@ -229,7 +228,7 @@ template <class T, class Container, class Compare>
 void
 priority_queue<T, Container, Compare>::push(value_type&& val)
 {
-    cont_.push_back(move(val));
+    cont_.push_back(mrsuyi::move(val));
     push_heap(cont_.begin(), cont_.end(), cmp_);
 }
 // emplace
@@ -238,7 +237,7 @@ template <class... Args>
 void
 priority_queue<T, Container, Compare>::emplace(Args&&... args)
 {
-    cont_.emplace_back(forward<Args>(args)...);
+    cont_.emplace_back(mrsuyi::forward<Args>(args)...);
     push_heap(cont_.begin(), cont_.end(), cmp_);
 }
 // pop
