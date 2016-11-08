@@ -1,3 +1,4 @@
+#include <memory>
 #include "debug.hpp"
 #include "functions.hpp"
 

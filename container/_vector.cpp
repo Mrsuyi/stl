@@ -84,29 +84,33 @@ iter()
 }
 
 void
-insert()
+push_emplace()
 {
-    vector<int> ints(2, 1);
-    auto it = ints.begin();
-    ++it;
-    it = ints.insert(it, 10);
-    ++it;
-    auto il = {1, 2, 3};
-    ints.insert(it, il.begin(), il.end());
-    it = ints.end();
-    ints.insert(it, 2, 666);
-
-    assert(equal(ints, {1, 10, 1, 2, 3, 1, 666, 666}));
+    // push_back & emplace_back
+    vector<int> push = {1, 2};
+    push.push_back(3);
+    push.push_back(4);
+    push.emplace_back(5);
+    assert(equal(push, {1, 2, 3, 4, 5}));
+    assert(push.capacity() == 8);
 }
 
 void
-emplace()
+insert()
 {
-    vector<int> ints(2, 1);
-    ints.emplace(ints.begin() + 1, 10);
-    ints.emplace_back(20);
+/*    vector<int> ints(2, 1);*/
+    //ints.insert(ints.begin(), 1, 100);
+    //assert(equal(ints, {100, 1, 1}));
+    //assert(ints.capacity() == 4);
+    //ints.insert(ints.begin() + 2, 2, 100);
+    //print(ints);
+    //assert(equal(ints, {100, 1, 100, 100, 1}));
 
-    assert(equal(ints, {1, 10, 1, 20}));
+    // from range
+    /*    ints = {1, 4, 5};*/
+    // auto il = {2, 3};
+    // ints.insert(ints.begin() + 1, il.begin(), il.end());
+    // assert(equal(ints, {1, 2, 3, 4, 5}));
 }
 
 void
@@ -133,22 +137,6 @@ swap()
     }
 }
 
-/*void*/
-// nest()
-//{
-// vector<string> tmp;
-// vector<vector<string>> matrix;
-
-// for (int row = 0; row < 2; ++row)
-//{
-// matrix.push_back(tmp);
-// for (int col = 0; col < 2; ++col)
-//{
-// matrix.back().push_back(string());
-//}
-//}
-/*}*/
-
 int
 main()
 {
@@ -156,16 +144,15 @@ main()
     assign();
     capacity();
     iter();
-    // insert();
-    // emplace();
+    push_emplace();
+    insert();
     // erase();
     // iter();
     // swap();
-    // nest();
-    // nest2();
-    // nest3();
 
-    std::vector<int> ints;
+    /*    int a[] = {1, 2, 3};*/
+    // std::move_backward(a, a + 3, a + 1);
+     std::vector<int> ints;
     // vector<string> strs;
     // strs.push_back(string());
     // strs.push_back(string());

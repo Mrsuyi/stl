@@ -125,12 +125,12 @@ template <class ForwardIt>
 void
 destroy(ForwardIt first, ForwardIt last)
 {
-    for (; first != last; ++first) destroy_at(&*first);
+    for (; first != last; ++first) destroy_at(mrsuyi::addressof(*first));
 }
 template <class ForwardIt, class Size>
 void
 destroy_n(ForwardIt first, Size n)
 {
-    for (; n > 0; ++first, --n) destroy_at(&*first);
+    for (; n > 0; ++first, --n) destroy_at(mrsuyi::addressof(*first));
 }
 }
