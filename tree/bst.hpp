@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <initializer_list>
 #include "container/vector.hpp"
-#include "debug.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
 #include "string.hpp"
@@ -36,7 +35,7 @@ protected:
     // find the proper insert position
     bool insert_pos(const Key& key, Node**& _mount, Node*& _parent) const;
     // find the mount-point of [node]
-    Node** mount_pos(Node* node) const;
+    Node** mount_pos(Node* node);
     // min node in tree of [root]
     Node* min(Node* root) const;
     // max node in tree of [root]
@@ -56,14 +55,13 @@ public:
 
     // ctor & dtor
     // default
-    bst(const Compare& cmp);
-    bst(Compare&& cmp = Compare());
+    bst(const Compare& cmp = Compare());
     // range
-    template <class InputIter>
-    bst(InputIter first, InputIter last, const Compare& cmp = Compare());
+    template <class InputIt>
+    bst(InputIt first, InputIt last, const Compare& cmp = Compare());
     // initializer_list
     bst(std::initializer_list<Key>, const Compare& = Compare());
-
+    // dtor
     virtual ~bst();
 
     // capacity
@@ -109,6 +107,7 @@ protected:
     size_t size_;
 };
 
+//============================== iter & riter ================================//
 template <class Key, class Node, class Compare>
 template <class E>
 class bst<Key, Node, Compare>::iter
@@ -177,7 +176,8 @@ public:
         return res;
     }
     operator iter<const E>() const { return iter<const E>(node_); }
-protected:
+
+public:
     Node* node_;
 };
 
@@ -216,10 +216,11 @@ bst<Key, Node, Compare>::insert_pos(const Key& key, Node**& _mount,
 }
 template <class Key, class Node, class Compare>
 Node**
-bst<Key, Node, Compare>::mount_pos(Node* n) const
+bst<Key, Node, Compare>::mount_pos(Node* n)
 {
-    Node** res = nullptr;
-    if (n->parent) res = (n->parent->l == n) ? &(n->parent->l) : &(n->parent->r);
+    Node** res = &root_;
+    if (n->parent)
+        res = (n->parent->l == n) ? &(n->parent->l) : &(n->parent->r);
     return res;
 }
 template <class Key, class Node, class Compare>
@@ -279,16 +280,10 @@ bst<Key, Node, Compare>::bst(const Compare& cmp)
     : root_(nullptr), cmp_(cmp), size_(0)
 {
 }
-template <class Key, class Node, class Compare>
-bst<Key, Node, Compare>::bst(Compare&& cmp)
-    : root_(nullptr), cmp_(mrsuyi::move(cmp)), size_(0)
-{
-}
 // range
 template <class Key, class Node, class Compare>
-template <class InputIter>
-bst<Key, Node, Compare>::bst(InputIter first, InputIter last,
-                             const Compare& cmp)
+template <class InputIt>
+bst<Key, Node, Compare>::bst(InputIt first, InputIt last, const Compare& cmp)
     : root_(nullptr), size_(0), cmp_(cmp)
 {
     for (; first != last; ++first) insert(*first);
@@ -427,17 +422,7 @@ template <class Key, class Node, class Compare>
 pair<typename bst<Key, Node, Compare>::iterator, bool>
 bst<Key, Node, Compare>::insert(const Key& key)
 {
-    Node** mount = &root_;
-    Node* parent = nullptr;
-    if (insert_pos(key, mount, parent))
-    {
-        *mount = new Node(key);
-        (*mount)->parent = parent;
-        ++size_;
-        return {*mount, true};
-    }
-    else
-        return {*mount, false};
+    insert(mrsuyi::move(Key(key)));
 }
 template <class Key, class Node, class Compare>
 pair<typename bst<Key, Node, Compare>::iterator, bool>

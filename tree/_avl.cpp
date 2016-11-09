@@ -5,20 +5,23 @@
 
 using namespace mrsuyi;
 
-template <class T, size_t N>
-avl<T>
-make(const T (&x)[N])
+template <class T>
+void
+print_tree(const avl<T>& t)
 {
-    avl<T> res;
-    for (size_t i = 0; i < N; ++i) res.insert(x[i]);
-    return res;
+    cout << t.graph(std::to_string) << endl;
 }
 
 void
-insert()
+ctor_dtor()
 {
-    auto t = make({3, 1, 1, 2, 2, 4, 5});
-    cout << t.graph(std::to_string) << endl;
+    avl<int> a = {1, 5, 4, 7, 9, 6, 8, 2, 3};
+}
+
+void
+iter()
+{
+    avl<int> t = {3, 1, 1, 2, 2, 4, 5};
     assert(equal(t, {1, 2, 3, 4, 5}));
     assert(requal(t, {5, 4, 3, 2, 1}));
 }
@@ -26,17 +29,44 @@ insert()
 void
 find()
 {
-    auto t = make({5, 2, 3, 4, 1});
+    avl<int> t = {3, 1, 1, 2, 2, 4, 5};
     assert(*t.find(2) == 2);
     assert(*t.find(1) == 1);
     assert(t.find(100) == t.end());
 };
 
+void
+erase()
+{
+    avl<int> a = {1, 5, 4, 7, 9, 6, 8, 2, 3};
+    cout << a.graph(std::to_string) << endl;
+    a.erase(1);
+    cout << a.graph(std::to_string) << endl;
+    a.erase(3);
+    cout << a.graph(std::to_string) << endl;
+    a.erase(8);
+    cout << a.graph(std::to_string) << endl;
+    a.erase(2);
+    cout << a.graph(std::to_string) << endl;
+    a.erase(4);
+    cout << a.graph(std::to_string) << endl;
+    a.erase(5);
+    cout << a.graph(std::to_string) << endl;
+    a.erase(6);
+    cout << a.graph(std::to_string) << endl;
+    a.erase(7);
+    cout << a.graph(std::to_string) << endl;
+    a.erase(9);
+    cout << a.graph(std::to_string) << endl;
+}
+
 int
 main()
 {
-    insert();
+    ctor_dtor();
+    iter();
     find();
+    erase();
 
     return 0;
 };
