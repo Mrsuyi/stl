@@ -101,7 +101,8 @@ public:
     // generate a tree-graph for console-print
     string graph(string (*)(Key)) const;
 
-protected:
+public:
+//protected:
     Node* root_;
     Compare cmp_;
     size_t size_;

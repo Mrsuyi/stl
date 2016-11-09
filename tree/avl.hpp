@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <functional>
 #include "bst.hpp"
 #include "container/vector.hpp"
 #include "debug.hpp"
@@ -33,6 +34,8 @@ protected:
     using node = avl_node<Key>;
     using bst_t = bst<Key, avl_node<Key>, Compare>;
 
+    // get height
+    int height(node* n);
     // balance node till root
     void balance(node* n);
     // spin
@@ -63,9 +66,22 @@ public:
     pair<iterator, bool> insert(Key&&);
     iterator erase(iterator);
     size_t erase(const Key&);
+
+    // mrsuyi's special functions :D
+    bool height_check() const;
 };
 
 //=============================== protected ==================================//
+// reset height
+template <class Key, class Compare>
+int
+avl<Key, Compare>::height(node* n)
+{
+    int hl = n->l ? n->l->height : -1;
+    int hr = n->r ? n->r->height : -1;
+    return max(hl, hr) + 1;
+}
+// balance
 template <class Key, class Compare>
 void
 avl<Key, Compare>::balance(node* n)
@@ -76,6 +92,7 @@ avl<Key, Compare>::balance(node* n)
         node* nr = n->r;
         int hl = nl ? nl->height : -1;
         int hr = nr ? nr->height : -1;
+        int h = max(hl, hr) + 1;
 
         if (abs(hl - hr) > 1)
         {
@@ -85,11 +102,17 @@ avl<Key, Compare>::balance(node* n)
                 int hlr = nl->r ? nl->r->height : -1;
 
                 if (hll > hlr)
+                {
                     spinl(n);
+                }
                 else
                 {
+                    //++nl->r->height;
+                    //--nl->height;
                     spinr(nl);
                     spinl(n);
+                    nl->r->height = height(nl->r);
+                    nl->height = height(nl);
                 }
             }
             else
@@ -98,24 +121,31 @@ avl<Key, Compare>::balance(node* n)
                 int hrr = nr->r ? nr->r->height : -1;
 
                 if (hrr > hrl)
-                    spinr(n);
-                else
                 {
-                    spinl(nr);
                     spinr(n);
                 }
+                else
+                {
+                    //++nr->l->height;
+                    //--nr->height;
+                    spinl(nr);
+                    spinr(n);
+                    nr->l->height = height(nr->l);
+                    nr->height = height(nr);
+                }
             }
+            n->height = h - 2;
+            return;
         }
         else
         {
-            auto new_height = max(hl, hr) + 1;
-            if (new_height != n->height)
+            if (h != n->height)
             {
-                n->height = new_height;
+                n->height = h;
                 n = n->parent;
             }
             else
-                break;
+                return;
         }
     }
 }
@@ -220,35 +250,11 @@ template <class Key, class Compare>
 typename avl<Key, Compare>::iterator
 avl<Key, Compare>::erase(iterator it)
 {
-    /*    if (!it.node_->l && !it.node_->r)*/
-    //{
-
-    //}
-    // else
-    //{
-    // if (it.node_->l &&
-    //(!it.node_->r || it.node_->l->height > it.node_->r->height))
-    //{
-    // auto n = bst_t::max(it.node_->l);
-    //*(bst_t::mount_pos(n)) = n->l;
-    // if (n->l) n->l->parent = n->parent;
-    // bst_t::replace(it.node_, n);
-    //}
-    // else
-    //{
-    // auto n = bst_t::min(it.node_->r);
-    //*(bst_t::mount_pos(n)) = n->r;
-    // if (n->r) n->r->parent = n->parent;
-    // bst_t::replace(it.node_, n);
-    //}
-    // delete it.node_;
-    //--bst_t::size_;
-    /*}*/
     node* balance_pos;
     if (it.node_->l)
     {
         auto n = bst_t::max(it.node_->l);
-        balance_pos = n->parent;
+        balance_pos = n->parent == it.node_ ? n : n->parent;
         *(bst_t::mount_pos(n)) = n->l;
         if (n->l) n->l->parent = n->parent;
         bst_t::replace(it.node_, n);
@@ -256,7 +262,7 @@ avl<Key, Compare>::erase(iterator it)
     else if (it.node_->r)
     {
         auto n = bst_t::min(it.node_->r);
-        balance_pos = n->parent;
+        balance_pos = n->parent == it.node_ ? n : n->parent;
         *(bst_t::mount_pos(n)) = n->r;
         if (n->r) n->r->parent = n->parent;
         bst_t::replace(it.node_, n);
@@ -269,5 +275,21 @@ avl<Key, Compare>::erase(iterator it)
     balance(balance_pos);
     delete it.node_;
     --bst_t::size_;
+}
+
+template <class Key, class Compare>
+bool
+avl<Key, Compare>::height_check() const
+{
+    std::function<int(node*)> check = [&check](node* n) {
+        if (!n) return -1;
+        int l = check(n->l);
+        int r = check(n->r);
+        if (l == -2 || r == -2) return -2;
+        int h = max(l, r) + 1;
+        if (h != n->height) return -2;
+        return h;
+    };
+    return check(bst_t::root_) != -2;
 }
 }
