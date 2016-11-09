@@ -7,12 +7,12 @@
 
 namespace mrsuyi
 {
-template <class T>
+template <class Key>
 struct avl_node
 {
     avl_node *l, *r, *parent;
     int height;
-    T t;
+    Key key;
 
     template <class... Args>
     avl_node(Args... args)
@@ -20,17 +20,17 @@ struct avl_node
           r(nullptr),
           parent(nullptr),
           height(0),
-          t(forward<Args>(args)...)
+          key(forward<Args>(args)...)
     {
     }
 };
 
-template <class T, class Compare = mrsuyi::less<T>>
-class avl : public bst<T, avl_node<T>, Compare>
+template <class Key, class Compare = mrsuyi::less<Key>>
+class avl : public bst<Key, avl_node<Key>, Compare>
 {
 protected:
-    using node = avl_node<T>;
-    using bst_t = bst<T, avl_node<T>, Compare>;
+    using node = avl_node<Key>;
+    using bst_t = bst<Key, avl_node<Key>, Compare>;
     using iterator = typename bst_t::iterator;
     using const_iterator = typename bst_t::const_iterator;
 
@@ -48,16 +48,16 @@ public:
     // element access
 
     // modifiers
-    iterator insert(const T&);
-    iterator insert(T&&);
-    iterator erase(const T&);
+    iterator insert(const Key&);
+    iterator insert(Key&&);
+    iterator erase(const Key&);
     iterator erase(const_iterator);
 };
 
 //=============================== protected ==================================//
-template <class T, class Compare>
+template <class Key, class Compare>
 void
-avl<T, Compare>::balance(node* n)
+avl<Key, Compare>::balance(node* n)
 {
     while (n)
     {
@@ -129,9 +129,9 @@ avl<T, Compare>::balance(node* n)
     }
 }
 // spin-left (parent & right-child)
-template <class T, class Compare>
+template <class Key, class Compare>
 void
-avl<T, Compare>::spinl(node* parent)
+avl<Key, Compare>::spinl(node* parent)
 {
     node* child = parent->l;
     //
@@ -144,9 +144,9 @@ avl<T, Compare>::spinl(node* parent)
     --parent->height;
 }
 // spin-right (parent & left-child)
-template <class T, class Compare>
+template <class Key, class Compare>
 void
-avl<T, Compare>::spinr(node* parent)
+avl<Key, Compare>::spinr(node* parent)
 {
     node* child = parent->r;
     //
@@ -160,26 +160,26 @@ avl<T, Compare>::spinr(node* parent)
 }
 
 //============================== ctor & dtor =================================//
-template <class T, class Compare>
-avl<T, Compare>::avl(const Compare& cmp) : bst_t(cmp)
+template <class Key, class Compare>
+avl<Key, Compare>::avl(const Compare& cmp) : bst_t(cmp)
 {
 }
-template <class T, class Compare>
-avl<T, Compare>::~avl()
+template <class Key, class Compare>
+avl<Key, Compare>::~avl()
 {
 }
 
 //================================ modifiers =================================//
 // insert
-template <class T, class Compare>
-typename avl<T, Compare>::iterator
-avl<T, Compare>::insert(const T& t)
+template <class Key, class Compare>
+typename avl<Key, Compare>::iterator
+avl<Key, Compare>::insert(const Key& key)
 {
-    insert(T(t));
+    insert(Key(key));
 }
-template <class T, class Compare>
-typename avl<T, Compare>::iterator
-avl<T, Compare>::insert(T&& t)
+template <class Key, class Compare>
+typename avl<Key, Compare>::iterator
+avl<Key, Compare>::insert(Key&& key)
 {
     node** mount = &(bst_t::root_);
     node* parent = nullptr;
@@ -188,28 +188,28 @@ avl<T, Compare>::insert(T&& t)
     {
         parent = *mount;
 
-        if (bst_t::cmp_(t, (*mount)->t))
+        if (bst_t::cmp_(key, (*mount)->key))
             mount = &((*mount)->l);
         else
             mount = &((*mount)->r);
     }
 
-    if (!parent || bst_t::cmp_(t, parent->t) || bst_t::cmp_(parent->t, t))
+    if (!parent || bst_t::cmp_(key, parent->key) || bst_t::cmp_(parent->key, key))
     {
-        *mount = new node(move(t));
+        *mount = new node(move(key));
         (*mount)->parent = parent;
         ++bst_t::size_;
     }
 }
 // erase
-template <class T, class Compare>
-typename avl<T, Compare>::iterator
-avl<T, Compare>::erase(const T& t)
+template <class Key, class Compare>
+typename avl<Key, Compare>::iterator
+avl<Key, Compare>::erase(const Key& key)
 {
 }
-template <class T, class Compare>
-typename avl<T, Compare>::iterator
-avl<T, Compare>::erase(const_iterator it)
+template <class Key, class Compare>
+typename avl<Key, Compare>::iterator
+avl<Key, Compare>::erase(const_iterator it)
 {
 }
 }

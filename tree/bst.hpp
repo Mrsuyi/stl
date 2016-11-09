@@ -1,27 +1,30 @@
 #pragma once
 
 #include <cstddef>
+#include <initializer_list>
 #include "container/vector.hpp"
+#include "debug.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
 #include "string.hpp"
 
 namespace mrsuyi
 {
-template <class T>
+template <class Key>
 struct bst_node
 {
     bst_node *l, *r, *parent;
-    T t;
+    Key key;
 
     template <class... Args>
     bst_node(Args... args)
-        : l(nullptr), r(nullptr), parent(nullptr), t(forward<Args>(args)...)
+        : l(nullptr), r(nullptr), parent(nullptr), key(forward<Args>(args)...)
     {
     }
 };
 
-template <class T, class Node = bst_node<T>, class Compare = mrsuyi::less<T>>
+template <class Key, class Node = bst_node<Key>,
+          class Compare = mrsuyi::less<Key>>
 class bst
 {
 protected:
@@ -31,25 +34,36 @@ protected:
     class riter;
 
     // find the proper insert position
-    void find_mount_pos(const T& t, Node**& _mount, Node*& _parent) const;
-    // min node in tree
-    Node* min() const;
-    // max node in tree
-    Node* max() const;
+    bool insert_pos(const Key& key, Node**& _mount, Node*& _parent) const;
+    // find the mount-point of [node]
+    Node** mount_pos(Node* node) const;
+    // min node in tree of [root]
+    Node* min(Node* root) const;
+    // max node in tree of [root]
+    Node* max(Node* root) const;
     // find
-    Node* search(const T& t) const;
+    Node* search(const Key& key) const;
+    // replace
+    void replace(Node* cur, Node* tar);
     // height
     int height(Node* n) const;
 
 public:
-    using iterator = iter<T>;
-    using const_iterator = iter<const T>;
-    using reverse_iterator = riter<T>;
-    using const_reverse_iterator = riter<const T>;
+    using iterator = iter<Key>;
+    using const_iterator = iter<const Key>;
+    using reverse_iterator = riter<Key>;
+    using const_reverse_iterator = riter<const Key>;
 
     // ctor & dtor
+    // default
     bst(const Compare& cmp);
     bst(Compare&& cmp = Compare());
+    // range
+    template <class InputIter>
+    bst(InputIter first, InputIter last, const Compare& cmp = Compare());
+    // initializer_list
+    bst(std::initializer_list<Key>, const Compare& = Compare());
+
     virtual ~bst();
 
     // capacity
@@ -71,14 +85,14 @@ public:
     const_reverse_iterator crend() const noexcept;
 
     // modifiers
-    iterator insert(const T&);
-    iterator insert(T&&);
-    iterator erase(const T&);
-    iterator erase(const_iterator);
+    pair<iterator, bool> insert(const Key&);
+    pair<iterator, bool> insert(Key&&);
+    iterator erase(iterator);
+    size_t erase(const Key&);
 
     // lookup
-    iterator find(const T&);
-    const_iterator find(const T&) const;
+    iterator find(const Key&);
+    const_iterator find(const Key&) const;
 
     // mrsuyi-special-functions :D
     // height recorded by root
@@ -87,7 +101,7 @@ public:
     int real_height() const;
     iterator root() const;
     // generate a tree-graph for console-print
-    string graph(string (*)(T)) const;
+    string graph(string (*)(Key)) const;
 
 protected:
     Node* root_;
@@ -95,11 +109,11 @@ protected:
     size_t size_;
 };
 
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 template <class E>
-class bst<T, Node, Compare>::iter
+class bst<Key, Node, Compare>::iter
 {
-    friend class bst<T, Node, Compare>;
+    friend class bst<Key, Node, Compare>;
 
 public:
     using value_type = E;
@@ -112,8 +126,8 @@ public:
     iter(Node* ptr) : node_(ptr) {}
     iter(const iter& it) : node_(it.node_) {}
     iter& operator=(const iter& it) { node_ = it.node_; }
-    E& operator*() const { return node_->t; }
-    E* operator->() const { return &(node_->t); }
+    E& operator*() const { return node_->key; }
+    E* operator->() const { return &(node_->key); }
     bool operator==(const iter& it) { return node_ == it.node_; }
     bool operator!=(const iter& it) { return node_ != it.node_; }
     iter& operator++()
@@ -167,11 +181,11 @@ protected:
     Node* node_;
 };
 
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 template <class E>
-class bst<T, Node, Compare>::riter : public iter<E>
+class bst<Key, Node, Compare>::riter : public iter<E>
 {
-    friend class bst<T, Node, Compare>;
+    friend class bst<Key, Node, Compare>;
 
 public:
     riter() : iter<E>() {}
@@ -183,79 +197,111 @@ public:
 };
 
 //=============================== protected ==================================//
-template <class T, class Node, class Compare>
-void
-bst<T, Node, Compare>::find_mount_pos(const T& t, Node**& _mount,
-                                      Node*& _parent) const
+template <class Key, class Node, class Compare>
+bool
+bst<Key, Node, Compare>::insert_pos(const Key& key, Node**& _mount,
+                                    Node*& _parent) const
 {
-    while (_parent)
+    while (*_mount)
     {
-        if (cmp_(_parent->t, t))
-        {
-            _mount = &(_parent->r);
-            _parent = _parent->r;
-        }
-        else if (cmp_(t, _parent->t))
-        {
-            _mount = &(_parent->l);
-            _parent = _parent->l;
-        }
+        _parent = *_mount;
+        if (cmp_((*_mount)->key, key))
+            _mount = &((*_mount)->r);
+        else if (cmp_(key, (*_mount)->key))
+            _mount = &((*_mount)->l);
+        else
+            return false;
     }
+    return true;
 }
-template <class T, class Node, class Compare>
-Node*
-bst<T, Node, Compare>::min() const
+template <class Key, class Node, class Compare>
+Node**
+bst<Key, Node, Compare>::mount_pos(Node* n) const
 {
-    if (!root_) return nullptr;
-    Node* res = root_;
-    while (res->l) res = res->l;
+    Node** res = nullptr;
+    if (n->parent) res = (n->parent->l == n) ? &(n->parent->l) : &(n->parent->r);
     return res;
 }
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 Node*
-bst<T, Node, Compare>::max() const
+bst<Key, Node, Compare>::min(Node* root) const
 {
-    if (!root_) return nullptr;
-    Node* res = root_;
-    while (res->r) res = res->r;
-    return res;
+    if (!root) return nullptr;
+    while (root->l) root = root->l;
+    return root;
 }
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 Node*
-bst<T, Node, Compare>::search(const T& t) const
+bst<Key, Node, Compare>::max(Node* root) const
+{
+    if (!root) return nullptr;
+    while (root->r) root = root->r;
+    return root;
+}
+template <class Key, class Node, class Compare>
+void
+bst<Key, Node, Compare>::replace(Node* cur, Node* tar)
+{
+    if (auto mount = mount_pos(cur)) *mount = tar;
+    tar->parent = cur->parent;
+    tar->l = cur->l;
+    if (tar->l) tar->l->parent = tar;
+    tar->r = cur->r;
+    if (tar->r) tar->r->parent = tar;
+}
+template <class Key, class Node, class Compare>
+Node*
+bst<Key, Node, Compare>::search(const Key& key) const
 {
     for (Node* n = root_; n;)
     {
-        if (cmp_(n->t, t))
+        if (cmp_(n->key, key))
             n = n->r;
-        else if (cmp_(t, n->t))
+        else if (cmp_(key, n->key))
             n = n->l;
         else
             return n;
     }
     return nullptr;
 }
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 int
-bst<T, Node, Compare>::height(Node* n) const
+bst<Key, Node, Compare>::height(Node* n) const
 {
     if (!n) return 0;
     return max(height(n->l), height(n->r)) + 1;
 }
 
 //============================== ctor & dtor =================================//
-template <class T, class Node, class Compare>
-bst<T, Node, Compare>::bst(const Compare& cmp)
+// default
+template <class Key, class Node, class Compare>
+bst<Key, Node, Compare>::bst(const Compare& cmp)
     : root_(nullptr), cmp_(cmp), size_(0)
 {
 }
-template <class T, class Node, class Compare>
-bst<T, Node, Compare>::bst(Compare&& cmp)
+template <class Key, class Node, class Compare>
+bst<Key, Node, Compare>::bst(Compare&& cmp)
     : root_(nullptr), cmp_(mrsuyi::move(cmp)), size_(0)
 {
 }
-template <class T, class Node, class Compare>
-bst<T, Node, Compare>::~bst()
+// range
+template <class Key, class Node, class Compare>
+template <class InputIter>
+bst<Key, Node, Compare>::bst(InputIter first, InputIter last,
+                             const Compare& cmp)
+    : root_(nullptr), size_(0), cmp_(cmp)
+{
+    for (; first != last; ++first) insert(*first);
+}
+// initializer_list
+template <class Key, class Node, class Compare>
+bst<Key, Node, Compare>::bst(std::initializer_list<Key> il, const Compare& cmp)
+    : bst(il.begin(), il.end(), cmp)
+{
+}
+// dtor
+template <class Key, class Node, class Compare>
+bst<Key, Node, Compare>::~bst()
 {
     vector<Node*> dels;
     dels.reserve(size_ / 2);
@@ -274,151 +320,202 @@ bst<T, Node, Compare>::~bst()
 }
 
 //================================ capacity ==================================//
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 size_t
-bst<T, Node, Compare>::size() const
+bst<Key, Node, Compare>::size() const
 {
     return size_;
 }
 
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 bool
-bst<T, Node, Compare>::empty() const
+bst<Key, Node, Compare>::empty() const
 {
     return size() == 0;
 }
 
 //================================= iterators ================================//
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::iterator
-bst<T, Node, Compare>::begin() noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::iterator
+bst<Key, Node, Compare>::begin() noexcept
 {
-    return iterator(min());
+    return iterator(min(root_));
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::iterator
-bst<T, Node, Compare>::end() noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::iterator
+bst<Key, Node, Compare>::end() noexcept
 {
     return iterator(nullptr);
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_iterator
-bst<T, Node, Compare>::begin() const noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_iterator
+bst<Key, Node, Compare>::begin() const noexcept
 {
-    return const_iterator(min());
+    return const_iterator(min(root_));
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_iterator
-bst<T, Node, Compare>::end() const noexcept
-{
-    return const_iterator(nullptr);
-}
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_iterator
-bst<T, Node, Compare>::cbegin() const noexcept
-{
-    return const_iterator(min());
-}
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_iterator
-bst<T, Node, Compare>::cend() const noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_iterator
+bst<Key, Node, Compare>::end() const noexcept
 {
     return const_iterator(nullptr);
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::reverse_iterator
-bst<T, Node, Compare>::rbegin() noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_iterator
+bst<Key, Node, Compare>::cbegin() const noexcept
 {
-    return reverse_iterator(max());
+    return const_iterator(min(root_));
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::reverse_iterator
-bst<T, Node, Compare>::rend() noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_iterator
+bst<Key, Node, Compare>::cend() const noexcept
+{
+    return const_iterator(nullptr);
+}
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::reverse_iterator
+bst<Key, Node, Compare>::rbegin() noexcept
+{
+    return reverse_iterator(max(root_));
+}
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::reverse_iterator
+bst<Key, Node, Compare>::rend() noexcept
 {
     return reverse_iterator(nullptr);
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_reverse_iterator
-bst<T, Node, Compare>::rbegin() const noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_reverse_iterator
+bst<Key, Node, Compare>::rbegin() const noexcept
 {
-    return const_reverse_iterator(max());
+    return const_reverse_iterator(max(root_));
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_reverse_iterator
-bst<T, Node, Compare>::rend() const noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_reverse_iterator
+bst<Key, Node, Compare>::rend() const noexcept
 {
     return const_reverse_iterator(nullptr);
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_reverse_iterator
-bst<T, Node, Compare>::crbegin() const noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_reverse_iterator
+bst<Key, Node, Compare>::crbegin() const noexcept
 {
-    return const_reverse_iterator(max());
+    return const_reverse_iterator(max(root_));
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_reverse_iterator
-bst<T, Node, Compare>::crend() const noexcept
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_reverse_iterator
+bst<Key, Node, Compare>::crend() const noexcept
 {
     return const_reverse_iterator(nullptr);
 }
 
 //================================== lookup ==================================//
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::iterator
-bst<T, Node, Compare>::find(const T& t)
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::iterator
+bst<Key, Node, Compare>::find(const Key& key)
 {
-    return iterator(search(t));
+    return iterator(search(key));
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::const_iterator
-bst<T, Node, Compare>::find(const T& t) const
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::const_iterator
+bst<Key, Node, Compare>::find(const Key& key) const
 {
-    return const_iterator(search(t));
+    return const_iterator(search(key));
 }
 
 //=============================== modifiers ==================================//
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::iterator
-bst<T, Node, Compare>::insert(const T& t)
+template <class Key, class Node, class Compare>
+pair<typename bst<Key, Node, Compare>::iterator, bool>
+bst<Key, Node, Compare>::insert(const Key& key)
 {
-    Node** mount = nullptr;
-    Node* parent = root_;
-    find_mount_pos(t, mount, parent);
-    *mount = new Node(t);
-    (*mount)->parent = parent;
+    Node** mount = &root_;
+    Node* parent = nullptr;
+    if (insert_pos(key, mount, parent))
+    {
+        *mount = new Node(key);
+        (*mount)->parent = parent;
+        ++size_;
+        return {*mount, true};
+    }
+    else
+        return {*mount, false};
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::iterator
-bst<T, Node, Compare>::insert(T&& t)
+template <class Key, class Node, class Compare>
+pair<typename bst<Key, Node, Compare>::iterator, bool>
+bst<Key, Node, Compare>::insert(Key&& key)
 {
-    Node** mount = nullptr;
-    Node* parent = root_;
-    find_mount_pos(t, mount, parent);
-    *mount = new Node(mrsuyi::move(t));
-    (*mount)->parent = parent;
+    Node** mount = &root_;
+    Node* parent = nullptr;
+    if (insert_pos(key, mount, parent))
+    {
+        *mount = new Node(mrsuyi::move(key));
+        (*mount)->parent = parent;
+        ++size_;
+        return {*mount, true};
+    }
+    else
+        return {*mount, false};
+}
+
+// erase
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::iterator
+bst<Key, Node, Compare>::erase(iterator it)
+{
+    if (it.node_->l)
+    {
+        auto n = max(it.node_->l);
+        *mount_pos(n) = n->l;
+        if (n->l) n->l->parent = n->parent;
+        replace(it.node_, n);
+    }
+    else if (it.node_->r)
+    {
+        auto n = min(it.node_->r);
+        *mount_pos(n) = n->r;
+        if (n->r) n->r->parent = n->parent;
+        replace(it.node_, n);
+    }
+    else
+    {
+        if (auto mount = mount_pos(it.node_)) *mount = nullptr;
+    }
+    delete it.node_;
+    --size_;
+}
+template <class Key, class Node, class Compare>
+size_t
+bst<Key, Node, Compare>::erase(const Key& key)
+{
+    auto it = find(key);
+    if (it != end())
+    {
+        erase(it);
+        return 1;
+    }
+    return 0;
 }
 
 //======================== mrsuyi-special-functions :D =======================//
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 int
-bst<T, Node, Compare>::height() const
+bst<Key, Node, Compare>::height() const
 {
     return root_->height;
 }
-template <class T, class Node, class Compare>
+template <class Key, class Node, class Compare>
 int
-bst<T, Node, Compare>::real_height() const
+bst<Key, Node, Compare>::real_height() const
 {
     return height(root_);
 }
-template <class T, class Node, class Compare>
-typename bst<T, Node, Compare>::iterator
-bst<T, Node, Compare>::root() const
+template <class Key, class Node, class Compare>
+typename bst<Key, Node, Compare>::iterator
+bst<Key, Node, Compare>::root() const
 {
     return iterator(root_);
 }
-template <class T, class Node, class Compare>
-string bst<T, Node, Compare>::graph(string (*to_string)(T)) const
+template <class Key, class Node, class Compare>
+string bst<Key, Node, Compare>::graph(string (*to_string)(Key)) const
 {
     vector<Node*> nodes;
     vector<vector<string>> vals;
@@ -432,7 +529,7 @@ string bst<T, Node, Compare>::graph(string (*to_string)(T)) const
 
         for (auto& node : nodes)
         {
-            vals.back().push_back(to_string(node->t));
+            vals.back().push_back(to_string(node->key));
             if (node->l) tmp.push_back(node->l);
             if (node->r) tmp.push_back(node->r);
         }
