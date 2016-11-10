@@ -9,12 +9,12 @@
 
 namespace mrsuyi
 {
-template <class Key>
+template <class T>
 struct avl_node
 {
     avl_node *l, *r, *parent;
     int height;
-    Key key;
+    T t;
 
     template <class... Args>
     avl_node(Args... args)
@@ -22,17 +22,17 @@ struct avl_node
           r(nullptr),
           parent(nullptr),
           height(0),
-          key(forward<Args>(args)...)
+          t(forward<Args>(args)...)
     {
     }
 };
 
-template <class Key, class Compare = mrsuyi::less<Key>>
-class avl : public bst<Key, avl_node<Key>, Compare>
+template <class T, class Compare = mrsuyi::less<T>>
+class avl : public bst<T, avl_node<T>, Compare>
 {
 protected:
-    using node = avl_node<Key>;
-    using bst_t = bst<Key, avl_node<Key>, Compare>;
+    using node = avl_node<T>;
+    using bst_t = bst<T, avl_node<T>, Compare>;
 
     // reset height
     void reset_height(node* n);
@@ -57,17 +57,17 @@ public:
     template <class InputIter>
     avl(InputIter first, InputIter last, const Compare& cmp = Compare());
     // initializer_list
-    avl(std::initializer_list<Key>, const Compare& = Compare());
+    avl(std::initializer_list<T>, const Compare& = Compare());
     // dtor
-    virtual ~avl() override;
+    ~avl();
 
     // element access
 
     // modifiers
-    pair<iterator, bool> insert(const Key&);
-    pair<iterator, bool> insert(Key&&);
+    pair<iterator, bool> insert(const T&);
+    pair<iterator, bool> insert(T&&);
     iterator erase(iterator);
-    size_t erase(const Key&);
+    size_t erase(const T&);
 
     // mrsuyi's special functions :D
     bool valid() const;
@@ -75,18 +75,18 @@ public:
 
 //=============================== protected ==================================//
 // reset height
-template <class Key, class Compare>
+template <class T, class Compare>
 void
-avl<Key, Compare>::reset_height(node* n)
+avl<T, Compare>::reset_height(node* n)
 {
     int hl = n->l ? n->l->height : -1;
     int hr = n->r ? n->r->height : -1;
     n->height = max(hl, hr) + 1;
 }
 // check, if balance, return
-template <class Key, class Compare>
+template <class T, class Compare>
 int
-avl<Key, Compare>::check(node* n) const
+avl<T, Compare>::check(node* n) const
 {
     int hl = n->l ? n->l->height : -1;
     int hr = n->r ? n->r->height : -1;
@@ -94,9 +94,9 @@ avl<Key, Compare>::check(node* n) const
     return max(hl, hr) + 1;
 }
 // balance
-template <class Key, class Compare>
+template <class T, class Compare>
 void
-avl<Key, Compare>::balance(node* n)
+avl<T, Compare>::balance(node* n)
 {
     node* nl = n->l;
     node* nr = n->r;
@@ -132,9 +132,9 @@ avl<Key, Compare>::balance(node* n)
 }
 
 // spin-left (parent & right-child)
-template <class Key, class Compare>
+template <class T, class Compare>
 void
-avl<Key, Compare>::spinl(node* old_root)
+avl<T, Compare>::spinl(node* old_root)
 {
     node* new_root = old_root->l;
     //
@@ -151,9 +151,9 @@ avl<Key, Compare>::spinl(node* old_root)
     reset_height(new_root);
 }
 // spin-right (parent & left-child)
-template <class Key, class Compare>
+template <class T, class Compare>
 void
-avl<Key, Compare>::spinr(node* old_root)
+avl<T, Compare>::spinr(node* old_root)
 {
     node* new_root = old_root->r;
     //
@@ -172,47 +172,47 @@ avl<Key, Compare>::spinr(node* old_root)
 
 //============================== ctor & dtor =================================//
 // default
-template <class Key, class Compare>
-avl<Key, Compare>::avl(const Compare& cmp) : bst_t(cmp)
+template <class T, class Compare>
+avl<T, Compare>::avl(const Compare& cmp) : bst_t(cmp)
 {
 }
 // range
-template <class Key, class Compare>
+template <class T, class Compare>
 template <class InputIt>
-avl<Key, Compare>::avl(InputIt first, InputIt last, const Compare& cmp)
+avl<T, Compare>::avl(InputIt first, InputIt last, const Compare& cmp)
     : bst_t(cmp)
 {
     for (; first != last; ++first) insert(*first);
 }
 // range
-template <class Key, class Compare>
-avl<Key, Compare>::avl(std::initializer_list<Key> il, const Compare& cmp)
+template <class T, class Compare>
+avl<T, Compare>::avl(std::initializer_list<T> il, const Compare& cmp)
     : avl(il.begin(), il.end(), cmp)
 {
 }
 // dtor
-template <class Key, class Compare>
-avl<Key, Compare>::~avl()
+template <class T, class Compare>
+avl<T, Compare>::~avl()
 {
 }
 
 //================================ modifiers =================================//
 // insert
-template <class Key, class Compare>
-pair<typename avl<Key, Compare>::iterator, bool>
-avl<Key, Compare>::insert(const Key& key)
+template <class T, class Compare>
+pair<typename avl<T, Compare>::iterator, bool>
+avl<T, Compare>::insert(const T& t)
 {
-    insert(move(Key(key)));
+    insert(move(T(t)));
 }
-template <class Key, class Compare>
-pair<typename avl<Key, Compare>::iterator, bool>
-avl<Key, Compare>::insert(Key&& key)
+template <class T, class Compare>
+pair<typename avl<T, Compare>::iterator, bool>
+avl<T, Compare>::insert(T&& t)
 {
     node** mount = &(bst_t::root_);
     node* parent = nullptr;
-    if (bst_t::insert_pos(key, mount, parent))
+    if (bst_t::insert_pos(t, mount, parent))
     {
-        *mount = new node(mrsuyi::move(key));
+        *mount = new node(mrsuyi::move(t));
         (*mount)->parent = parent;
         ++bst_t::size_;
 
@@ -235,11 +235,11 @@ avl<Key, Compare>::insert(Key&& key)
         return {*mount, false};
 }
 // erase
-template <class Key, class Compare>
+template <class T, class Compare>
 size_t
-avl<Key, Compare>::erase(const Key& key)
+avl<T, Compare>::erase(const T& t)
 {
-    auto it = bst_t::find(key);
+    auto it = bst_t::find(t);
     if (it != bst_t::end())
     {
         erase(it);
@@ -247,9 +247,9 @@ avl<Key, Compare>::erase(const Key& key)
     }
     return 0;
 }
-template <class Key, class Compare>
-typename avl<Key, Compare>::iterator
-avl<Key, Compare>::erase(iterator it)
+template <class T, class Compare>
+typename avl<T, Compare>::iterator
+avl<T, Compare>::erase(iterator it)
 {
     node* balance_pos;
     if (it.node_->l)
@@ -313,9 +313,9 @@ avl<Key, Compare>::erase(iterator it)
 }
 
 //======================== mrsuyi-special-functions :D =======================//
-template <class Key, class Compare>
+template <class T, class Compare>
 bool
-avl<Key, Compare>::valid() const
+avl<T, Compare>::valid() const
 {
     std::function<int(node*)> check = [&check](node* n) {
         if (!n) return -1;
@@ -325,7 +325,7 @@ avl<Key, Compare>::valid() const
         if (l == -2 || r == -2 || abs(l - r) > 1)
         {
             cout << "height diff > 1" << endl;
-            cout << n->key << endl;
+            cout << n->t << endl;
             cout << n->height << endl;
             return -2;
         }
@@ -334,7 +334,7 @@ avl<Key, Compare>::valid() const
         if (h != n->height)
         {
             cout << "height not same with real-h" << endl;
-            cout << n->key << endl;
+            cout << n->t << endl;
             cout << n->height << endl;
             return -2;
         }

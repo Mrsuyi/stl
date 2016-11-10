@@ -49,8 +49,8 @@ struct array
     // iterate
     iterator begin() noexcept;
     iterator end() noexcept;
-    const_iterator end() const noexcept;
     const_iterator begin() const noexcept;
+    const_iterator end() const noexcept;
     const_iterator cbegin() const noexcept;
     const_iterator cend() const noexcept;
     reverse_iterator rbegin() noexcept;
