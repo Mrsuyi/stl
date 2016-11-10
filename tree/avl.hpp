@@ -34,8 +34,10 @@ protected:
     using node = avl_node<Key>;
     using bst_t = bst<Key, avl_node<Key>, Compare>;
 
-    // get height
-    int height(node* n);
+    // reset height
+    void reset_height(node* n);
+    // check balance & return height
+    int check(node* n) const;
     // balance node till root
     void balance(node* n);
     // spin
@@ -68,17 +70,27 @@ public:
     size_t erase(const Key&);
 
     // mrsuyi's special functions :D
-    bool height_check() const;
+    bool valid() const;
 };
 
 //=============================== protected ==================================//
 // reset height
 template <class Key, class Compare>
-int
-avl<Key, Compare>::height(node* n)
+void
+avl<Key, Compare>::reset_height(node* n)
 {
     int hl = n->l ? n->l->height : -1;
     int hr = n->r ? n->r->height : -1;
+    n->height = max(hl, hr) + 1;
+}
+// check, if balance, return
+template <class Key, class Compare>
+int
+avl<Key, Compare>::check(node* n) const
+{
+    int hl = n->l ? n->l->height : -1;
+    int hr = n->r ? n->r->height : -1;
+    if (abs(hl - hr) > 1) return -2;
     return max(hl, hr) + 1;
 }
 // balance
@@ -86,69 +98,39 @@ template <class Key, class Compare>
 void
 avl<Key, Compare>::balance(node* n)
 {
-    while (n)
+    node* nl = n->l;
+    node* nr = n->r;
+    int hl = nl ? nl->height : -1;
+    int hr = nr ? nr->height : -1;
+
+    if (hl > hr)
     {
-        node* nl = n->l;
-        node* nr = n->r;
-        int hl = nl ? nl->height : -1;
-        int hr = nr ? nr->height : -1;
-        int h = max(hl, hr) + 1;
+        int hll = nl->l ? nl->l->height : -1;
+        int hlr = nl->r ? nl->r->height : -1;
 
-        if (abs(hl - hr) > 1)
-        {
-            if (hl > hr)
-            {
-                int hll = nl->l ? nl->l->height : -1;
-                int hlr = nl->r ? nl->r->height : -1;
-
-                if (hll > hlr)
-                {
-                    spinl(n);
-                }
-                else
-                {
-                    //++nl->r->height;
-                    //--nl->height;
-                    spinr(nl);
-                    spinl(n);
-                    nl->r->height = height(nl->r);
-                    nl->height = height(nl);
-                }
-            }
-            else
-            {
-                int hrl = nr->l ? nr->l->height : -1;
-                int hrr = nr->r ? nr->r->height : -1;
-
-                if (hrr > hrl)
-                {
-                    spinr(n);
-                }
-                else
-                {
-                    //++nr->l->height;
-                    //--nr->height;
-                    spinl(nr);
-                    spinr(n);
-                    nr->l->height = height(nr->l);
-                    nr->height = height(nr);
-                }
-            }
-            n->height = h - 2;
-            return;
-        }
+        if (hll >= hlr)
+            spinl(n);
         else
         {
-            if (h != n->height)
-            {
-                n->height = h;
-                n = n->parent;
-            }
-            else
-                return;
+            spinr(nl);
+            spinl(n);
+        }
+    }
+    else
+    {
+        int hrl = nr->l ? nr->l->height : -1;
+        int hrr = nr->r ? nr->r->height : -1;
+
+        if (hrr >= hrl)
+            spinr(n);
+        else
+        {
+            spinl(nr);
+            spinr(n);
         }
     }
 }
+
 // spin-left (parent & right-child)
 template <class Key, class Compare>
 void
@@ -164,6 +146,9 @@ avl<Key, Compare>::spinl(node* old_root)
     //
     new_root->r = old_root;
     old_root->parent = new_root;
+    //
+    reset_height(old_root);
+    reset_height(new_root);
 }
 // spin-right (parent & left-child)
 template <class Key, class Compare>
@@ -180,6 +165,9 @@ avl<Key, Compare>::spinr(node* old_root)
     //
     new_root->l = old_root;
     old_root->parent = new_root;
+    //
+    reset_height(old_root);
+    reset_height(new_root);
 }
 
 //============================== ctor & dtor =================================//
@@ -227,7 +215,20 @@ avl<Key, Compare>::insert(Key&& key)
         *mount = new node(mrsuyi::move(key));
         (*mount)->parent = parent;
         ++bst_t::size_;
-        balance(parent);
+
+        while (parent)
+        {
+            int res = check(parent);
+            if (res == -2)
+                balance(parent);
+            else if (res != parent->height)
+            {
+                parent->height = res;
+                parent = parent->parent;
+            }
+            else
+                break;
+        }
         return {*mount, true};
     }
     else
@@ -255,39 +256,88 @@ avl<Key, Compare>::erase(iterator it)
     {
         auto n = bst_t::max(it.node_->l);
         balance_pos = n->parent == it.node_ ? n : n->parent;
+        // remove n
         *(bst_t::mount_pos(n)) = n->l;
         if (n->l) n->l->parent = n->parent;
+        // replace deleted-node with n
         bst_t::replace(it.node_, n);
+        // balance
+        while (balance_pos)
+        {
+            auto parent = balance_pos->parent;
+            int res = check(balance_pos);
+            if (res == -2)
+                balance(balance_pos);
+            else if (res != balance_pos->height)
+                balance_pos->height = res;
+            balance_pos = parent;
+        }
     }
     else if (it.node_->r)
     {
         auto n = bst_t::min(it.node_->r);
         balance_pos = n->parent == it.node_ ? n : n->parent;
+        // remove n
         *(bst_t::mount_pos(n)) = n->r;
         if (n->r) n->r->parent = n->parent;
+        // replace deleted-node with n
         bst_t::replace(it.node_, n);
+        while (balance_pos)
+        {
+            auto parent = balance_pos->parent;
+            int res = check(balance_pos);
+            if (res == -2)
+                balance(balance_pos);
+            else if (res != balance_pos->height)
+                balance_pos->height = res;
+            balance_pos = parent;
+        }
     }
     else
     {
         balance_pos = it.node_->parent;
         if (auto mount = bst_t::mount_pos(it.node_)) *mount = nullptr;
+        while (balance_pos)
+        {
+            auto parent = balance_pos->parent;
+            int res = check(balance_pos);
+            if (res == -2)
+                balance(balance_pos);
+            else if (res != balance_pos->height)
+                balance_pos->height = res;
+            balance_pos = parent;
+        }
     }
-    balance(balance_pos);
     delete it.node_;
     --bst_t::size_;
 }
 
+//======================== mrsuyi-special-functions :D =======================//
 template <class Key, class Compare>
 bool
-avl<Key, Compare>::height_check() const
+avl<Key, Compare>::valid() const
 {
     std::function<int(node*)> check = [&check](node* n) {
         if (!n) return -1;
         int l = check(n->l);
         int r = check(n->r);
-        if (l == -2 || r == -2) return -2;
+        // if (l == -2 || r == -2 || abs(l - r) > 1) return -2;
+        if (l == -2 || r == -2 || abs(l - r) > 1)
+        {
+            cout << "height diff > 1" << endl;
+            cout << n->key << endl;
+            cout << n->height << endl;
+            return -2;
+        }
         int h = max(l, r) + 1;
-        if (h != n->height) return -2;
+        // if (h != n->height) return -2;
+        if (h != n->height)
+        {
+            cout << "height not same with real-h" << endl;
+            cout << n->key << endl;
+            cout << n->height << endl;
+            return -2;
+        }
         return h;
     };
     return check(bst_t::root_) != -2;

@@ -19,15 +19,9 @@ ctor_dtor()
     {
         avl<int> a;
         int cnt = rand() % 100;
-        for (int j = 0; j < cnt; ++j)
-        {
-            a.insert(rand() % 100);
-        }
-        assert(a.height_check());
+        for (int j = 0; j < cnt; ++j) a.insert(rand() % 100);
+        assert(a.valid());
     }
-    // avl<int> a = {1, 5, 4, 7, 9, 6, 8, 2, 3};
-    // print_tree(a);
-    // assert(a.height_check());
 }
 
 void
@@ -50,35 +44,22 @@ find()
 void
 erase()
 {
-    avl<int> a = {1, 5, 4, 7, 9, 6, 8, 2, 3};
-    print_tree(a);
-    a.erase(1);
-    print_tree(a);
-    assert(a.height_check());
-    a.erase(3);
-    print_tree(a);
-    assert(a.height_check());
-    a.erase(8);
-    print_tree(a);
-    assert(a.height_check());
-    a.erase(2);
-    print_tree(a);
-    assert(a.height_check());
-    a.erase(4);
-    print_tree(a);
-    cout << a.root_->l->height << endl;
-    cout << a.root_->r->height << endl;
-    cout << a.root_->r->r->height << endl;
-    assert(a.height_check());
-    a.erase(5);
-    print_tree(a);
-    assert(a.height_check());
-    a.erase(6);
-    assert(a.height_check());
-    a.erase(7);
-    assert(a.height_check());
-    a.erase(9);
-    assert(a.height_check());
+    for (int i = 0; i < 100; ++i)
+    {
+        avl<int> a;
+        int cnt = rand() % 100;
+        for (int j = 0; j < cnt; ++j) a.insert(rand() % 100);
+
+        while (a.size() > 1)
+        {
+            int offset = rand() % a.size();
+            auto it = a.begin();
+            for (int j = 0; j < offset; ++j, ++it)
+                ;
+            a.erase(it);
+            assert(a.valid());
+        }
+    }
 }
 
 int
