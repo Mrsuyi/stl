@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "algorithm.hpp"
+#include "debug.hpp"
 #include "iterator.hpp"
 #include "memory.hpp"
 
@@ -121,29 +122,32 @@ public:
     template <class... Args>
     void emplace_front(Args&&... args);
 
-    iterator insert(const_iterator pos, const T& val);
-    iterator insert(const_iterator pos, T&& val);
-    void insert(const_iterator pos, size_t n, const T& val);
+    iterator insert_after(const_iterator pos, const T& val);
+    iterator insert_after(const_iterator pos, T&& val);
+    void insert_after(const_iterator pos, size_t n, const T& val);
     template <class InputIterator>
-    void insert(const_iterator pos, InputIterator first, InputIterator last,
-                typename mrsuyi::enable_if<
-                    !mrsuyi::is_integral<InputIterator>::value>::type* = 0);
-    iterator erase(const_iterator pos);
-    iterator erase(const_iterator first, const_iterator last);
+    void insert_after(
+        const_iterator pos, InputIterator first, InputIterator last,
+        typename mrsuyi::enable_if<
+            !mrsuyi::is_integral<InputIterator>::value>::type* = 0);
+    iterator erase_after(const_iterator pos);
+    iterator erase_after(const_iterator first, const_iterator last);
 
     // operations
     void merge(forward_list&&);
     template <class Compare>
     void merge(forward_list&&, Compare);
 
-    void splice(const_iterator pos, forward_list& other);
-    void splice(const_iterator pos, forward_list&& other);
-    void splice(const_iterator pos, forward_list& other, const_iterator it);
-    void splice(const_iterator pos, forward_list&& other, const_iterator it);
-    void splice(const_iterator pos, forward_list& other, const_iterator first,
-                const_iterator last);
-    void splice(const_iterator pos, forward_list&& other, const_iterator first,
-                const_iterator last);
+    void splice_after(const_iterator pos, forward_list& other);
+    void splice_after(const_iterator pos, forward_list&& other);
+    void splice_after(const_iterator pos, forward_list& other,
+                      const_iterator it);
+    void splice_after(const_iterator pos, forward_list&& other,
+                      const_iterator it);
+    void splice_after(const_iterator pos, forward_list& other,
+                      const_iterator first, const_iterator last);
+    void splice_after(const_iterator pos, forward_list&& other,
+                      const_iterator first, const_iterator last);
 
     void remove(const T& val);
     template <class UnaryPredicate>
@@ -164,6 +168,18 @@ protected:
     template <class... Args>
     node* new_node(Args... args);
     void del_node(node*);
+    // insert [one | head-tail] into list
+    node* insert_after(node* pos, node* one);
+    node* insert_after(node* pos, node* head, node* tail);
+    // extract [one | head-tail] from list
+    node* yield_after(node* one);
+    node* yield_after(node* head, node* tail);
+    // erase
+    node* erase_after(node* one);
+    // get last node
+    node* last();
+    // get mid node
+    node* mid();
 
 protected:
     allocator_type alloc_;
@@ -202,22 +218,12 @@ public:
         ++*this;
         return res;
     }
-    iter& operator--()
-    {
-        node_ = node_->pre;
-        return *this;
-    }
-    iter operator--(int)
-    {
-        auto res = *this;
-        --*this;
-        return res;
-    }
     operator iter<const E>() const { return iter<const E>(node_); }
 private:
     node* node_;
 };
 
+//================================== protected ===============================//
 // new/delete function
 template <class T, class Alloc>
 template <class... Args>
@@ -235,8 +241,70 @@ forward_list<T, Alloc>::del_node(node* ptr)
     mrsuyi::destroy_at(ptr);
     alloc_.deallocate(ptr, 1);
 }
+// insert
+template <class T, class Alloc>
+typename forward_list<T, Alloc>::node*
+forward_list<T, Alloc>::insert_after(node* pos, node* one)
+{
+    insert_after(pos, one, one);
+}
+template <class T, class Alloc>
+typename forward_list<T, Alloc>::node*
+forward_list<T, Alloc>::insert_after(node* pos, node* head, node* tail)
+{
+    tail->nxt = pos->nxt;
+    pos->nxt = head;
+    return head;
+}
+// yield
+template <class T, class Alloc>
+typename forward_list<T, Alloc>::node*
+forward_list<T, Alloc>::yield_after(node* one)
+{
+    return yield_after(one, one->nxt);
+}
+template <class T, class Alloc>
+typename forward_list<T, Alloc>::node*
+forward_list<T, Alloc>::yield_after(node* pre_head, node* tail)
+{
+    node* res = pre_head->nxt;
+    pre_head->nxt = tail->nxt;
+    return res;
+}
+// erase
+template <class T, class Alloc>
+typename forward_list<T, Alloc>::node*
+forward_list<T, Alloc>::erase_after(node* one)
+{
+    node* res = one->nxt->nxt;
+    del_node(yield_after(one));
+    return res;
+}
+// last
+template <class T, class Alloc>
+typename forward_list<T, Alloc>::node*
+forward_list<T, Alloc>::last()
+{
+    node* res = joint_;
+    while (res->nxt != joint_) res = res->nxt;
+    return res;
+}
+// last
+template <class T, class Alloc>
+typename forward_list<T, Alloc>::node*
+forward_list<T, Alloc>::mid()
+{
+    node* fast = joint_;
+    node* slow = fast;
+    while (fast->nxt != joint_ && fast->nxt->nxt != joint_)
+    {
+        fast = fast->nxt->nxt;
+        slow = slow->nxt;
+    }
+    return slow;
+}
 
-// ctor & dtor
+//==================================== basic =================================//
 // default
 template <class T, class Alloc>
 forward_list<T, Alloc>::forward_list() : forward_list(allocator_type())
@@ -258,7 +326,7 @@ forward_list<T, Alloc>::forward_list(size_t n, const T& val,
                                      const allocator_type& alloc)
     : forward_list(alloc)
 {
-    for (size_t i = 0; i < n; ++i) push_back(val);
+    for (size_t i = 0; i < n; ++i) push_front(val);
 }
 // range
 template <class T, class Alloc>
@@ -269,7 +337,8 @@ forward_list<T, Alloc>::forward_list(
         !mrsuyi::is_integral<InputIterator>::value>::type*)
     : forward_list(alloc)
 {
-    for (; first != last; ++first) push_back(*first);
+    for (auto ins = before_begin(); first != last; ++first)
+        ins = insert_after(ins, *first);
 }
 // copy
 template <class T, class Alloc>
@@ -295,7 +364,6 @@ forward_list<T, Alloc>::forward_list(forward_list&& x,
     : joint_(x.joint_), alloc_(alloc)
 {
     x.joint_ = new_node();
-    x.size_ = 0;
 }
 // forward_list
 template <class T, class Alloc>
@@ -316,6 +384,7 @@ forward_list<T, Alloc>::~forward_list() noexcept
         del_node(tmp);
     } while (it != joint_);
 }
+
 // =
 template <class T, class Alloc>
 forward_list<T, Alloc>&
@@ -366,7 +435,7 @@ forward_list<T, Alloc>::get_allocator() const noexcept
     return alloc_;
 }
 
-// element access
+//=============================== element access =============================//
 template <class T, class Alloc>
 T&
 forward_list<T, Alloc>::front()
@@ -380,7 +449,7 @@ forward_list<T, Alloc>::front() const
     return *(this->begin());
 }
 
-// iterators
+//================================== iterators ===============================//
 // non-const before_begin/begin/end
 template <class T, class Alloc>
 typename forward_list<T, Alloc>::iterator
@@ -439,7 +508,7 @@ forward_list<T, Alloc>::cend() const noexcept
     return const_iterator(joint_);
 }
 
-// capacity
+//================================== capacity ================================//
 template <class T, class Alloc>
 bool
 forward_list<T, Alloc>::empty() const noexcept
@@ -453,7 +522,7 @@ forward_list<T, Alloc>::max_size() const noexcept
     return std::numeric_limits<size_t>::max();
 }
 
-// modifiers
+//================================== modifiers ===============================//
 template <class T, class Alloc>
 void
 forward_list<T, Alloc>::clear()
@@ -470,11 +539,16 @@ template <class T, class Alloc>
 void
 forward_list<T, Alloc>::resize(size_t size, const T& val)
 {
-/*    auto sz = mrsuyi::distance(begin(), end());*/
-    //if (sz < size)
-        //for (size_t i = sz; i < size; ++i) push_front(val);
-    //else
-        /*for (size_t i = size; i < sz; ++i) pop_front();*/
+    size_t cnt = 0;
+    auto pre = before_begin(), cur = begin();
+    for (; cnt < size && cur != end(); ++cnt, ++pre, ++cur)
+        ;
+    if (cnt == size)
+        for (; cur != end(); cur = erase_after(pre))
+            ;
+    else
+        for (; cnt < size; ++cnt, insert_after(pre, val))
+            ;
 }
 template <class T, class Alloc>
 void
@@ -489,19 +563,19 @@ template <class T, class Alloc>
 void
 forward_list<T, Alloc>::push_front(const T& val)
 {
-    insert(joint_->nxt, new_node(val));
+    emplace_front(val);
 }
 template <class T, class Alloc>
 void
 forward_list<T, Alloc>::push_front(T&& val)
 {
-    insert(joint_->nxt, new_node(mrsuyi::move(val)));
+    emplace_front(mrsuyi::move(val));
 }
 template <class T, class Alloc>
 void
 forward_list<T, Alloc>::pop_front()
 {
-    erase(joint_->nxt);
+    erase_after(before_begin());
 }
 
 // emplace front/back
@@ -511,59 +585,62 @@ typename forward_list<T, Alloc>::iterator
 forward_list<T, Alloc>::emplace_after(const_iterator pos, Args&&... args)
 {
     return iterator(
-        insert(pos.node_, new_node(mrsuyi::forward<Args>(args)...)));
+        insert_after(pos.node_, new_node(mrsuyi::forward<Args>(args)...)));
 }
 template <class T, class Alloc>
 template <class... Args>
 void
 forward_list<T, Alloc>::emplace_front(Args&&... args)
 {
-    insert(joint_->nxt, new_node(mrsuyi::forward<Args>(args)...));
+    insert_after(joint_, new_node(mrsuyi::forward<Args>(args)...));
 }
 
 // insert/erase
 template <class T, class Alloc>
 typename forward_list<T, Alloc>::iterator
-forward_list<T, Alloc>::insert(const_iterator pos, const T& val)
+forward_list<T, Alloc>::insert_after(const_iterator pos, const T& val)
 {
-    return iterator(insert(pos.node_, new_node(val)));
+    return emplace_after(pos, val);
 }
 template <class T, class Alloc>
 typename forward_list<T, Alloc>::iterator
-forward_list<T, Alloc>::insert(const_iterator pos, T&& val)
+forward_list<T, Alloc>::insert_after(const_iterator pos, T&& val)
 {
-    return iterator(insert(pos.node_, new_node(mrsuyi::move(val))));
+    return emplace_after(pos, mrsuyi::move(val));
 }
 template <class T, class Alloc>
 void
-forward_list<T, Alloc>::insert(const_iterator pos, size_t n, const T& val)
+forward_list<T, Alloc>::insert_after(const_iterator pos, size_t n, const T& val)
 {
-    for (size_t i = 0; i < n; ++i) insert(pos.node_, new_node(val));
+    for (size_t i = 0; i < n; ++i) insert_after(pos, val);
 }
 template <class T, class Alloc>
 template <class InputIterator>
 void
-forward_list<T, Alloc>::insert(
+forward_list<T, Alloc>::insert_after(
     const_iterator pos, InputIterator first, InputIterator last,
     typename mrsuyi::enable_if<
         !mrsuyi::is_integral<InputIterator>::value>::type*)
 {
-    for (; first != last; ++first) insert(pos.node_, new_node(*first));
+    for (; first != last; ++first) pos = insert_after(pos, *first);
 }
 template <class T, class Alloc>
 typename forward_list<T, Alloc>::iterator
-forward_list<T, Alloc>::erase(const_iterator pos)
+forward_list<T, Alloc>::erase_after(const_iterator pos)
 {
-    return iterator(erase(pos.node_));
+    return iterator(erase_after(pos.node_));
 }
 template <class T, class Alloc>
 typename forward_list<T, Alloc>::iterator
-forward_list<T, Alloc>::erase(const_iterator first, const_iterator last)
+forward_list<T, Alloc>::erase_after(const_iterator first, const_iterator last)
 {
-    for (; first != last; first = erase(first))
+    auto it = first;
+    ++it;
+    for (; it != last; it = erase_after(first))
         ;
 }
-// operations
+
+//================================== operations ==============================//
 // merge
 template <class T, class Alloc>
 void
@@ -586,14 +663,12 @@ forward_list<T, Alloc>::merge(forward_list&& other, Compare cmp)
         if (cmp(pthis->t, pthat->t))
         {
             tail->nxt = pthis;
-            pthis->pre = tail;
             tail = pthis;
             pthis = pthis->nxt;
         }
         else
         {
             tail->nxt = pthat;
-            pthat->pre = tail;
             tail = pthat;
             pthat = pthat->nxt;
         }
@@ -602,87 +677,85 @@ forward_list<T, Alloc>::merge(forward_list&& other, Compare cmp)
     if (pthat != other.joint_)
     {
         tail->nxt = pthat;
-        pthat->pre = tail;
-        tail = other.joint_->pre;
+        other.joint_->nxt = joint_->nxt;
+        joint_->nxt = joint_;
+        mrsuyi::swap(joint_, other.joint_);
     }
-    // close this's node-circle
-    tail->nxt = pthis;
-    pthis->pre = tail;
-    // reset other
-    other.joint_->pre = other.joint_;
+    else
+    {
+        tail->nxt = pthis;
+        other.joint_->nxt = other.joint_;
+    }
+}
+// splice_after
+template <class T, class Alloc>
+void
+forward_list<T, Alloc>::splice_after(const_iterator pos, forward_list& other)
+{
+    splice_after(pos, mrsuyi::move(other));
+}
+template <class T, class Alloc>
+void
+forward_list<T, Alloc>::splice_after(const_iterator pos, forward_list&& other)
+{
+    if (other.joint_->nxt == other.joint_) return;
+    insert_after(pos.node_, other.joint_->nxt, other.last());
     other.joint_->nxt = other.joint_;
-    other.size_ = 0;
-}
-// splice
-template <class T, class Alloc>
-void
-forward_list<T, Alloc>::splice(const_iterator pos, forward_list& other)
-{
-    splice(pos, mrsuyi::move(other));
 }
 template <class T, class Alloc>
 void
-forward_list<T, Alloc>::splice(const_iterator pos, forward_list&& other)
+forward_list<T, Alloc>::splice_after(const_iterator pos, forward_list& other,
+                                     const_iterator it)
 {
-    if (other.size_ == 0) return;
-    insert(pos.node_, other.joint_->nxt, other.joint_->pre, other.size_);
-    other.joint_->pre = other.joint_;
-    other.joint_->nxt = other.joint_;
-    other.size_ = 0;
+    splice_after(pos, mrsuyi::move(other), it);
 }
 template <class T, class Alloc>
 void
-forward_list<T, Alloc>::splice(const_iterator pos, forward_list& other,
-                               const_iterator it)
+forward_list<T, Alloc>::splice_after(const_iterator pos, forward_list&& other,
+                                     const_iterator it)
 {
-    splice(pos, mrsuyi::move(other), it);
+    insert_after(pos.node_, other.yield_after(it.node_));
 }
 template <class T, class Alloc>
 void
-forward_list<T, Alloc>::splice(const_iterator pos, forward_list&& other,
-                               const_iterator it)
+forward_list<T, Alloc>::splice_after(const_iterator pos, forward_list& other,
+                                     const_iterator first, const_iterator last)
 {
-    insert(pos.node_, other.yield(it.node_));
+    splice_after(pos, mrsuyi::move(other), first, last);
 }
 template <class T, class Alloc>
 void
-forward_list<T, Alloc>::splice(const_iterator pos, forward_list& other,
-                               const_iterator first, const_iterator last)
+forward_list<T, Alloc>::splice_after(const_iterator pos, forward_list&& other,
+                                     const_iterator first, const_iterator last)
 {
-    splice(pos, mrsuyi::move(other), first, last);
-}
-template <class T, class Alloc>
-void
-forward_list<T, Alloc>::splice(const_iterator pos, forward_list&& other,
-                               const_iterator first, const_iterator last)
-{
-    size_t cnt = distance(first, last);
-    node* head = first.node_;
-    node* tail = last.node_->pre;
-    other.yield(head, tail, cnt);
-    insert(pos.node_, head, tail, cnt);
+    node* pre_head = first.node_;
+    node* tail = pre_head;
+    while (tail->nxt != last.node_) tail = tail->nxt;
+    node* head = other.yield_after(pre_head, tail);
+    insert_after(pos.node_, head, tail);
 }
 // remove
 template <class T, class Alloc>
 void
 forward_list<T, Alloc>::remove(const T& val)
 {
-    for (auto it = begin(); it != end();)
-        if (*it == val)
-            it = erase(it);
-        else
-            ++it;
+    remove_if([&val](const T& t) { return val == t; });
 }
 template <class T, class Alloc>
 template <class UnaryPredicate>
 void
 forward_list<T, Alloc>::remove_if(UnaryPredicate p)
 {
-    for (auto it = begin(); it != end();)
-        if (p(*it))
-            it = erase(it);
+    for (auto pre = before_begin(), cur = begin(); cur != end();)
+    {
+        if (p(*cur))
+            cur = erase_after(pre);
         else
-            ++it;
+        {
+            ++pre;
+            ++cur;
+        }
+    }
 }
 // unique
 template <class T, class Alloc>
@@ -696,16 +769,16 @@ template <class BinaryPredicate>
 void
 forward_list<T, Alloc>::unique(BinaryPredicate p)
 {
-    for (auto it1 = begin(), it2 = ++begin(); it2 != end();)
-        if (p(*it1, *it2))
-        {
-            it2 = erase(it2);
-        }
+    for (auto pre = begin(), cur = ++begin(); cur != end();)
+    {
+        if (p(*pre, *cur))
+            cur = erase_after(pre);
         else
         {
-            ++it1;
-            ++it2;
+            ++pre;
+            ++cur;
         }
+    }
 }
 
 template <class T, class Alloc>
@@ -719,21 +792,19 @@ template <class Compare>
 void
 forward_list<T, Alloc>::sort(Compare p)
 {
-/*    if (size_ <= 1) return;*/
+    node* m = mid();
+    if (m == joint_) return;
 
-    //auto it = begin();
-    //for (size_t i = 0; i < size_ / 2; ++i, ++it)
-        //;
-    //forward_list tmp;
-    //tmp.splice(tmp.begin(), *this, begin(), it);
+    forward_list tmp;
+    tmp.splice_after(tmp.before_begin(), *this, before_begin(), ++iterator(m));
 
-    //tmp.sort(p);
-    //sort();
+    tmp.sort(p);
+    sort();
 
-    //merge(mrsuyi::move(tmp), p);
+    merge(mrsuyi::move(tmp), p);
 }
 
-// non-member functions
+//=========================== non-member functions ===========================//
 template <class T, class Alloc>
 void
 swap(forward_list<T, Alloc>& lhs, forward_list<T, Alloc>& rhs)
@@ -744,7 +815,8 @@ template <class T, class Alloc>
 bool
 operator==(const forward_list<T, Alloc>& lhs, const forward_list<T>& rhs)
 {
-    return lhs.size() == rhs.size() &&
+    return (distance(lhs.begin(), lhs.end()) ==
+            distance(rhs.begin(), rhs.end())) &&
            equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 template <class T, class Alloc>
