@@ -1,20 +1,7 @@
+#include "debug.hpp"
 #include "list.hpp"
-#include <cassert>
-#include <iostream>
-#include <vector>
 
 using namespace mrsuyi;
-using std::cout;
-using std::endl;
-
-void
-print(const list<int>& li)
-{
-    cout << "=====\n";
-    cout << "size: " << li.size() << endl;
-    for (auto n : li) cout << n << " ";
-    cout << endl;
-}
 
 void
 ctor_dtor()
@@ -29,8 +16,8 @@ ctor_dtor()
     list<int> fill_val(3, 1);
     assert(list<int>({1, 1, 1}) == fill_val);
     // range
-    std::vector<int> vec = {1, 2, 3};
-    list<int> range(vec.begin(), vec.end());
+    int vec[] = {1, 2, 3};
+    list<int> range(vec, vec + 3);
     assert(list<int>({1, 2, 3}) == range);
     // copy
     list<int> cp(fill_val);
@@ -163,7 +150,7 @@ merge()
     l2.merge(move(l1));
     assert(list<int>({1, 2, 3}) == l2);
     assert(list<int>({}) == l1);
-    
+
     l1 = {1, 5};
     l2 = {2, 3, 4};
     l2.merge(move(l1));

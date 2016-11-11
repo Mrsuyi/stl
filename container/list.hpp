@@ -243,7 +243,8 @@ private:
 // new/delete function
 template <class T, class Alloc>
 template <class... Args>
-typename list<T, Alloc>::node* list<T, Alloc>::new_node(Args... args)
+typename list<T, Alloc>::node*
+list<T, Alloc>::new_node(Args... args)
 {
     node* ptr = alloc_.allocate(1);
     mrsuyi::construct(ptr, mrsuyi::forward<Args>(args)...);
@@ -357,8 +358,7 @@ list<T, Alloc>::list(list&& x, const allocator_type& alloc)
 }
 // list
 template <class T, class Alloc>
-list<T, Alloc>::list(std::initializer_list<T> il,
-                     const allocator_type& alloc)
+list<T, Alloc>::list(std::initializer_list<T> il, const allocator_type& alloc)
     : list(il.begin(), il.end(), alloc)
 {
 }
@@ -590,37 +590,37 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(const T& val)
 {
-    insert(joint_->nxt, new_node(val));
+    emplace_front(val);
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_front(T&& val)
 {
-    insert(joint_->nxt, new_node(mrsuyi::move(val)));
+    emplace_front(mrsuyi::move(val));
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(const T& val)
 {
-    insert(joint_, new_node(val));
+    emplace_back(val);
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::push_back(T&& val)
 {
-    insert(joint_, new_node(mrsuyi::move(val)));
+    emplace_back(mrsuyi::move(val));
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::pop_front()
 {
-    erase(joint_->nxt);
+    erase(begin());
 }
 template <class T, class Alloc>
 void
 list<T, Alloc>::pop_back()
 {
-    erase(joint_->pre);
+    erase(--end());
 }
 
 // emplace front/back
@@ -637,14 +637,14 @@ template <class... Args>
 void
 list<T, Alloc>::emplace_back(Args&&... args)
 {
-    insert(joint_, new_node(mrsuyi::forward<Args>(args)...));
+    emplace(end(), mrsuyi::forward<Args>(args)...);
 }
 template <class T, class Alloc>
 template <class... Args>
 void
 list<T, Alloc>::emplace_front(Args&&... args)
 {
-    insert(joint_->nxt, new_node(mrsuyi::forward<Args>(args)...));
+    emplace(begin(), mrsuyi::forward<Args>(args)...);
 }
 
 // insert/erase
@@ -652,13 +652,13 @@ template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, const T& val)
 {
-    return iterator(insert(pos.node_, new_node(val)));
+    return emplace(pos, val);
 }
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
 list<T, Alloc>::insert(const_iterator pos, T&& val)
 {
-    return iterator(insert(pos.node_, new_node(mrsuyi::move(val))));
+    return emplace(pos, mrsuyi::move(val));
 }
 template <class T, class Alloc>
 void
@@ -674,7 +674,7 @@ list<T, Alloc>::insert(const_iterator pos, InputIterator first,
                        typename mrsuyi::enable_if<
                            !mrsuyi::is_integral<InputIterator>::value>::type*)
 {
-    for (; first != last; ++first) insert(pos.node_, new_node(*first));
+    for (; first != last; ++first) insert(pos, *first);
 }
 template <class T, class Alloc>
 typename list<T, Alloc>::iterator
@@ -792,11 +792,7 @@ template <class T, class Alloc>
 void
 list<T, Alloc>::remove(const T& val)
 {
-    for (auto it = begin(); it != end();)
-        if (*it == val)
-            it = erase(it);
-        else
-            ++it;
+    remove_if([&val](const T& t) { return val == t; });
 }
 template <class T, class Alloc>
 template <class UnaryPredicate>
