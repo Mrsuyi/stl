@@ -4,7 +4,7 @@
 
 namespace mrsuyi
 {
-template <class T, class Container = vector<T>>
+template <class T, class Container = mrsuyi::vector<T>>
 class stack
 {
     template <class U, class C>

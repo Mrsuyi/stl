@@ -10,12 +10,13 @@ class move_iterator
 {
 public:
     using iterator_type = Iterator;
-    using difference_type = typename iterator_traits<Iterator>::difference_type;
+    using difference_type =
+        typename mrsuyi::iterator_traits<Iterator>::difference_type;
     using pointer = Iterator;
-    using value_type = typename iterator_traits<Iterator>::value_type;
+    using value_type = typename mrsuyi::iterator_traits<Iterator>::value_type;
     using reference = value_type&&;
     using iterator_category =
-        typename iterator_traits<Iterator>::iterator_category;
+        typename mrsuyi::iterator_traits<Iterator>::iterator_category;
 
     // cons & des
     // default
@@ -39,7 +40,10 @@ public:
     iterator_type base() const { return it_; }
     reference operator*() const { return mrsuyi::move(*it_); }
     pointer operator->() const { return it_; }
-    reference operator[](difference_type n) const { return mrsuyi::move(it_[n]); }
+    reference operator[](difference_type n) const
+    {
+        return mrsuyi::move(it_[n]);
+    }
     // set
     move_iterator operator+(difference_type n)
     {
@@ -150,7 +154,8 @@ operator-(const move_iterator<Iterator1>& lhs,
 
 // make_reverse_iterator
 template <class Iterator>
-move_iterator<Iterator> make_move_iterator(Iterator it)
+move_iterator<Iterator>
+make_move_iterator(Iterator it)
 {
     return move_iterator<Iterator>(it);
 }

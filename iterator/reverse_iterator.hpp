@@ -11,7 +11,7 @@ class reverse_iterator
     // typedefs
 public:
     using iterator_type = Iterator;
-    using traits = iterator_traits<Iterator>;
+    using traits = mrsuyi::iterator_traits<Iterator>;
 
     using iterator_category = typename traits::iterator_category;
     using value_type = typename traits::value_type;

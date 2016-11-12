@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdlib>
-#include <cstring>
 #include <initializer_list>
 #include <limits>
 #include <stdexcept>
@@ -15,7 +13,7 @@
 
 namespace mrsuyi
 {
-template <class T, class Alloc = allocator<T>>
+template <class T, class Alloc = mrsuyi::allocator<T>>
 class vector
 {
     // typedefs
@@ -33,14 +31,6 @@ public:
     using const_iterator = const_pointer;
     using reverse_iterator = mrsuyi::reverse_iterator<iterator>;
     using const_reverse_iterator = mrsuyi::reverse_iterator<const_iterator>;
-
-private:
-    // estimate a proper capacity >= [size]
-    size_t overmeasure(size_t);
-    // migrate to a new block of mem
-    void migrate(size_t);
-    // embed a block of mem inside current mem. new-alloc may happen
-    void embed(T*, size_t);
 
 public:
     // ctor & dtor
@@ -142,6 +132,14 @@ public:
     void resize(size_t size, T val = T());
 
     void swap(vector& x);
+
+protected:
+    // estimate a proper capacity >= [size]
+    size_t overmeasure(size_t);
+    // migrate to a new block of mem
+    void migrate(size_t);
+    // embed a block of mem inside current mem. new-alloc may happen
+    void embed(T*, size_t);
 
 protected:
     T *bgn_ = nullptr, *end_ = nullptr, *cap_ = nullptr;

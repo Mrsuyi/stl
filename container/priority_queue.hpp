@@ -6,8 +6,8 @@
 
 namespace mrsuyi
 {
-template <class T, class Container = vector<T>,
-          class Compare = less<typename Container::value_type>>
+template <class T, class Container = mrsuyi::vector<T>,
+          class Compare = mrsuyi::less<typename Container::value_type>>
 class priority_queue
 {
 public:

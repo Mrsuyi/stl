@@ -4,13 +4,6 @@
 
 using namespace mrsuyi;
 
-struct shit
-{
-    shit() { cout << "default ctor\n"; }
-    shit(const shit&) { cout << "copy ctor\n"; }
-    shit(shit&&) { cout << "move ctor\n"; }
-};
-
 int main()
 {
     shit shits[1];

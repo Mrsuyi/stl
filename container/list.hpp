@@ -12,7 +12,7 @@
 
 namespace mrsuyi
 {
-template <class T, class Alloc = allocator<T>>
+template <class T, class Alloc = mrsuyi::allocator<T>>
 class list
 {
     struct node
@@ -203,7 +203,7 @@ public:
     using difference_type = size_t;
     using reference = E&;
     using pointer = E*;
-    using iterator_category = bidirectional_iterator_tag;
+    using iterator_category = mrsuyi::bidirectional_iterator_tag;
 
     iter() : node_(nullptr) {}
     iter(node* ptr) : node_(ptr) {}
