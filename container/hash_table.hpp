@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cmath>
+#include <initializer_list>
+#include "algorithm.hpp"
+#include "debug.hpp"
 #include "functional.hpp"
 #include "memory.hpp"
 #include "vector.hpp"
@@ -107,6 +111,15 @@ public:
     explicit hash_table(size_t bucket_suggest, const Hash& = Hash(),
                         const KeyEqual& = KeyEqual(),
                         const Allocator& = Allocator());
+    /*    // range*/
+    // template <class InputIt>
+    // hash_table(InputIt first, InputIt last, size_t bucket_count,
+    // const Hash& = Hash(), const KeyEqual& = KeyEqual(),
+    // const Allocator& = Allocator());
+    //// initializer_list
+    // hash_table(std::initializer_list<Key> init, size_t bucket_suggest,
+    // const Hash& = Hash(), const KeyEqual& = KeyEqual(),
+    // const Allocator& = Allocator());
     ~hash_table();
 
     // iterators
@@ -124,10 +137,37 @@ public:
 
     // modifiers
     void clear();
+
+    mrsuyi::pair<iterator, bool> insert_unique(const Key& key);
+    mrsuyi::pair<iterator, bool> insert_unique(Key&& key);
+    template <class InputIt>
+    void insert_unique(InputIt first, InputIt last);
+    void insert_unique(std::initializer_list<Key> il);
+
+    mrsuyi::pair<iterator, bool> insert_equal(const Key& key);
+    mrsuyi::pair<iterator, bool> insert_equal(Key&& key);
+    template <class InputIt>
+    void insert_equal(InputIt first, InputIt last);
+    void insert_equal(std::initializer_list<Key> il);
+
     template <class... Args>
     mrsuyi::pair<iterator, bool> emplace_unique(Args... args);
     template <class... Args>
     mrsuyi::pair<iterator, bool> emplace_equal(Args... args);
+
+    iterator erase(const_iterator pos);
+    iterator erase(const_iterator first, const_iterator last);
+    size_t erase_equal(const Key& key);
+    size_t erase_unique(const Key& key);
+
+    // lookup
+    size_t count_equal(const Key& key) const;
+    size_t count_unique(const Key& key) const;
+    iterator find(const Key& key);
+    const_iterator find(const Key& key) const;
+    mrsuyi::pair<iterator, iterator> equal_range(const Key& key);
+    mrsuyi::pair<const_iterator, const_iterator> equal_range(
+        const Key& key) const;
 
     // bucket interface
     local_iterator begin(size_t n) noexcept;
@@ -149,11 +189,19 @@ public:
     void rehash(size_t count);
     void reserve(size_t count);
 
+    // observers
+    Hash hash_function() const;
+    KeyEqual key_eq() const;
+
 protected:
     // Node* first();
     Node* first() const;
     // clear all nodes in buckets
     void clear_buckets();
+    // find node with key
+    Node* search(const Key& key) const;
+    // find range
+    mrsuyi::pair<Node*, Node*> search_range(const Key& key) const;
 
 protected:
     Hash hash_;
@@ -276,6 +324,25 @@ hash_table<Key, Node, Hash, KeyEqual, Allocator>::clear_buckets()
     }
     node_count_ = 0;
 }
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+Node*
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::search(const Key& key) const
+{
+    Node* cur = buckets_[bucket(key)];
+    while (cur && !key_equal(cur->key, key)) cur = cur->nxt;
+    return cur;
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+mrsuyi::pair<Node*, Node*>
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::search_range(
+    const Key& key) const
+{
+    Node* bgn = buckets_[bucket(key)];
+    while (bgn && !key_equal(bgn->key, key)) bgn = bgn->nxt;
+    Node* end = bgn;
+    while (end && key_equal(end->key, key)) end = end->nxt;
+    return {bgn, end};
+}
 
 //=================================== basic ==================================//
 // ctor & dtor
@@ -292,9 +359,27 @@ hash_table<Key, Node, Hash, KeyEqual, Allocator>::hash_table(
     : hash_(hash),
       key_equal_(key_equal),
       buckets_(bucket_suggest),
-      node_count_(0)
+      node_count_(0),
+      max_load_factor_(1)
 {
 }
+/*// range*/
+// template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+// hash_table<Key, Node, Hash, KeyEqual, Allocator>::hash_table(
+// InputIt first, InputIt last, size_t bucket_suggest, const Hash& hash,
+// const KeyEqual& key_equal, const Allocator& alloc)
+//: hash_table(bucket_suggest, hash, key_equal, alloc)
+//{
+// for (; first != last; ++first, emplace_
+//}
+//// initializer_list
+// template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+// hash_table<Key, Node, Hash, KeyEqual, Allocator>::hash_table(
+// std::initializer_list<Key> init, size_t bucket_suggest, const Hash&,
+// const KeyEqual&, const Allocator&)
+//{
+//}
+
 // dtor
 template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 hash_table<Key, Node, Hash, KeyEqual, Allocator>::~hash_table()
@@ -357,10 +442,11 @@ template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 size_t
 hash_table<Key, Node, Hash, KeyEqual, Allocator>::max_size() const noexcept
 {
-    return prime_nums[sizeof(prime_nums) - 1];
+    return prime_nums[61];
 }
 
 //================================= modifiers ================================//
+// clear
 template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 void
 hash_table<Key, Node, Hash, KeyEqual, Allocator>::clear()
@@ -368,12 +454,73 @@ hash_table<Key, Node, Hash, KeyEqual, Allocator>::clear()
     clear_buckets();
     buckets_.assign(buckets_.size(), nullptr);
 }
+// insert
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+mrsuyi::pair<
+    typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator, bool>
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::insert_unique(const Key& key)
+{
+    return insert_unique(Key(key));
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+mrsuyi::pair<
+    typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator, bool>
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::insert_unique(Key&& key)
+{
+    return emplace_unique(mrsuyi::move(key));
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+template <class InputIt>
+void
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::insert_unique(InputIt first,
+                                                                InputIt last)
+{
+    for (; first != last; ++first) insert_unique(*first);
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+void
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::insert_unique(
+    std::initializer_list<Key> il)
+{
+    insert_unique(il.begin(), il.end());
+}
+// insert
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+mrsuyi::pair<
+    typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator, bool>
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::insert_equal(const Key& key)
+{
+    return insert_equal(Key(key));
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+mrsuyi::pair<
+    typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator, bool>
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::insert_equal(Key&& key)
+{
+    return emplace_equal(mrsuyi::move(key));
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+template <class InputIt>
+void
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::insert_equal(InputIt first,
+                                                               InputIt last)
+{
+    for (; first != last; ++first) insert_equal(*first);
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+void
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::insert_equal(
+    std::initializer_list<Key> il)
+{
+    insert_equal(il.begin(), il.end());
+}
 // emplace
 template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 template <class... Args>
 mrsuyi::pair<
     typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator, bool>
-hash_table<Key, Node, Hash, KeyEqual, Allocator>::emplace_unique(Args... args)
+    hash_table<Key, Node, Hash, KeyEqual, Allocator>::emplace_unique(
+        Args... args)
 {
     reserve(size() + 1);
     Node* res = new Node(mrsuyi::forward<Args>(args)...);
@@ -393,7 +540,8 @@ template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 template <class... Args>
 mrsuyi::pair<
     typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator, bool>
-hash_table<Key, Node, Hash, KeyEqual, Allocator>::emplace_equal(Args... args)
+    hash_table<Key, Node, Hash, KeyEqual, Allocator>::emplace_equal(
+        Args... args)
 {
     reserve(size() + 1);
     Node* res = new Node(mrsuyi::forward<Args>(args)...);
@@ -411,7 +559,144 @@ hash_table<Key, Node, Hash, KeyEqual, Allocator>::emplace_equal(Args... args)
     }
     res->nxt = buckets_[n];
     buckets_[n] = res;
+    ++node_count_;
     return {iterator(this, res), true};
+}
+// erase
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::erase(const_iterator pos)
+{
+    auto res = pos;
+    ++res;
+    auto bucket_index = bucket(pos.node_->key);
+    Node** mount = buckets_.data() + bucket_index;
+    Node* cur = buckets_[bucket_index];
+    while (cur != pos.node_)
+    {
+        mount = &(cur->nxt);
+        cur = cur->nxt;
+    }
+    *mount = pos.node_->nxt;
+    delete pos.node_;
+    --node_count_;
+    return iterator(this, res.node_);
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::erase(const_iterator first,
+                                                        const_iterator last)
+{
+    for (; first != last; first = erase(first))
+        ;
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+size_t
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::erase_equal(const Key& key)
+{
+    auto bucket_index = bucket(key);
+    Node** mount = buckets_.data() + bucket_index;
+    Node* cur = buckets_[bucket_index];
+    while (cur && !key_equal_(cur->key, key))
+    {
+        mount = &(cur->nxt);
+        cur = cur->nxt;
+    }
+    size_t res = 0;
+    while (cur && key_equal_(cur->key, key))
+    {
+        auto nxt = cur->nxt;
+        delete cur;
+        cur = nxt;
+        ++res;
+    }
+    *mount = cur;
+    node_count_ -= res;
+    return res;
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+size_t
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::erase_unique(const Key& key)
+{
+    auto bucket_index = bucket(key);
+    Node** mount = buckets_.data() + bucket_index;
+    Node* cur = buckets_[bucket_index];
+    while (cur && !key_equal_(cur->key, key))
+    {
+        mount = &(cur->nxt);
+        cur = cur->nxt;
+    }
+    if (cur)
+    {
+        *mount = cur->nxt;
+        delete cur;
+        --node_count_;
+    }
+    return 1;
+}
+
+//================================== lookup ==================================//
+// count
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+size_t
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::count_equal(
+    const Key& key) const
+{
+    size_t res = 0;
+    Node* cur = buckets_[bucket(key)];
+    while (cur && key_equal_(cur->key, key))
+    {
+        ++res;
+        cur = cur->nxt;
+    }
+    return res;
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+size_t
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::count_unique(
+    const Key& key) const
+{
+    Node* cur = buckets_[bucket(key)];
+    while (cur)
+    {
+        if (key_equal_(cur->key, key))
+            return 1;
+        else
+            cur = cur->nxt;
+    }
+    return 0;
+}
+// find
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::find(const Key& key)
+{
+    return iterator(this, search(key));
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::const_iterator
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::find(const Key& key) const
+{
+    return const_iterator(this, search(key));
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+mrsuyi::pair<
+    typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator,
+    typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::iterator>
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::equal_range(const Key& key)
+{
+    auto p = search_range(key);
+    return {iterator(this, p.first), iterator(this, p.second)};
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+mrsuyi::pair<
+    typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::const_iterator,
+    typename hash_table<Key, Node, Hash, KeyEqual, Allocator>::const_iterator>
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::equal_range(
+    const Key& key) const
+{
+    auto p = search_range(key);
+    return {const_iterator(this, p.first), const_iterator(this, p.second)};
 }
 
 //============================== bucket interface ============================//
@@ -466,7 +751,7 @@ template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 size_t
 hash_table<Key, Node, Hash, KeyEqual, Allocator>::max_bucket_count() const
 {
-    return prime_nums[sizeof(prime_nums) - 1];
+    return prime_nums[61];
 }
 // bucket-size
 template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
@@ -494,7 +779,7 @@ template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 float
 hash_table<Key, Node, Hash, KeyEqual, Allocator>::max_load_factor() const
 {
-    return size() / bucket_count();
+    return max_load_factor_;
 }
 template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 void
@@ -506,10 +791,42 @@ template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 void
 hash_table<Key, Node, Hash, KeyEqual, Allocator>::rehash(size_t count)
 {
+    count = max(count, size_t(size() / max_load_factor()));
+    if (count <= buckets_.size()) return;
+    count = *mrsuyi::lower_bound(prime_nums, prime_nums + 61, count);
+
+    auto tmp = mrsuyi::move(buckets_);
+    buckets_ = mrsuyi::vector<Node*>(count);
+    for (size_t i = 0; i < tmp.size(); ++i)
+    {
+        Node* node = tmp[i];
+        while (node)
+        {
+            auto new_index = bucket(node->key);
+            Node* nxt = node->nxt;
+            node->nxt = buckets_[new_index];
+            buckets_[new_index] = node;
+            node = nxt;
+        }
+    }
 }
 template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
 void
 hash_table<Key, Node, Hash, KeyEqual, Allocator>::reserve(size_t count)
 {
+    rehash(std::ceil(count / max_load_factor()));
+}
+//=============================== hash policy ================================//
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+Hash
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::hash_function() const
+{
+    return hash_;
+}
+template <class Key, class Node, class Hash, class KeyEqual, class Allocator>
+KeyEqual
+hash_table<Key, Node, Hash, KeyEqual, Allocator>::key_eq() const
+{
+    return key_equal_;
 }
 }
