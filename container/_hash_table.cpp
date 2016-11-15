@@ -4,11 +4,52 @@
 
 using namespace mrsuyi;
 
+template <class T>
+void
+insert_equal(hash_table<T>& ht, std::initializer_list<T> il)
+{
+    for (auto it = il.begin(); it != il.end(); ++it) ht.emplace_equal(*it);
+}
+template <class T>
+void
+insert_unique(hash_table<T>& ht, std::initializer_list<T> il)
+{
+    for (auto it = il.begin(); it != il.end(); ++it) ht.emplace_unique(*it);
+}
+
 void
 ctor_dtor()
 {
     // default
     hash_table<int> ht;
+    ht.emplace_equal(1);
+    ht.emplace_equal(1);
+    ht.emplace_equal(2);
+    ht.emplace_equal(2);
+    assert(equal(ht, {1, 1, 2, 2}));
+    // copy
+    auto cp(ht);
+    assert(equal(cp, {1, 1, 2, 2}));
+    assert(equal(ht, {1, 1, 2, 2}));
+    // move
+    auto mv(mrsuyi::move(ht));
+    assert(equal(mv, {1, 1, 2, 2}));
+    assert(ht.empty());
+
+    // swap
+    mv.swap(ht);
+    assert(equal(ht, {1, 1, 2, 2}));
+    assert(mv.empty());
+
+    // = copy
+    mv = ht;
+    assert(equal(ht, {1, 1, 2, 2}));
+    assert(equal(mv, {1, 1, 2, 2}));
+
+    //// = move
+    mv = mrsuyi::move(ht);
+    assert(equal(mv, {1, 1, 2, 2}));
+    assert(ht.empty());
 }
 
 void
@@ -60,10 +101,10 @@ void
 insert()
 {
     hash_table<int> ht;
-    ht.insert_equal({1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9});
+    insert_equal(ht, {1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9});
     assert(equal(ht, {1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9}));
     ht.clear();
-    ht.insert_unique({1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9});
+    insert_unique(ht, {1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9});
     assert(equal(ht, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
 }
 
@@ -72,7 +113,7 @@ erase()
 {
     // single
     hash_table<int> ht;
-    ht.insert_equal({1, 1, 2, 2, 3, 3, 4});
+    insert_equal(ht, {1, 1, 2, 2, 3, 3, 4});
     *ht.erase(ht.begin());
     assert(equal(ht, {1, 2, 2, 3, 3, 4}));
 
@@ -87,13 +128,36 @@ erase()
     assert(equal(ht, {4}));
 
     // key-unique
-    ht.insert_equal({8, 8});
+    insert_equal(ht, {8, 8});
     assert(ht.erase_unique(4) == 1);
     assert(equal(ht, {8, 8}));
     assert(ht.erase_unique(8) == 1);
     assert(equal(ht, {8}));
     assert(ht.erase_unique(8) == 1);
     assert(ht.empty());
+}
+
+void
+lookup()
+{
+    hash_table<int> ht;
+    insert_equal(ht, {1, 1, 2, 2, 3, 3});
+
+    assert(ht.count_equal(1) == 2);
+
+    assert(*ht.find(1) == 1);
+
+    auto p = ht.equal_range(1);
+    auto it = p.first;
+    assert(*it++ == 1);
+    assert(*it++ == 1);
+    assert(it == p.second);
+
+    p = ht.equal_range(3);
+    it = p.first;
+    assert(*it++ == 3);
+    assert(*it++ == 3);
+    assert(it == p.second);
 }
 
 int
@@ -104,6 +168,9 @@ main()
     local_iter();
     insert();
     erase();
+    lookup();
+
+    std::unordered_set<int> a;
 
     return 0;
 }
