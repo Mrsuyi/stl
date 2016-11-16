@@ -108,8 +108,8 @@ public:
     using reference = value_type&;
     using const_reference = const value_type&;
     // TODO allocator_traits
-    //using pointer = value_type*;
-    //using const_pointer = const value_type*;
+    using pointer = value_type*;
+    using const_pointer = const value_type*;
 
     using iterator = iter<hash_table, Key>;
     using const_iterator = iter<const hash_table, const Key>;

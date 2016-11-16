@@ -3,8 +3,24 @@
 
 using namespace mrsuyi;
 
-int main()
+void
+uset()
 {
-    return 0;
+    unordered_set<int> defau;
+    unordered_set<int> il = {1, 2, 3, 4};
+    assert(equal(il, {1, 2, 3, 4}));
 }
 
+void
+umset()
+{
+}
+
+int
+main()
+{
+    uset();
+    umset();
+
+    return 0;
+}
