@@ -1,29 +1,11 @@
-#include <cassert>
-#include <iostream>
+#include "debug.hpp"
 #include "heap.hpp"
 
 using namespace mrsuyi;
-using std::cout;
-using std::endl;
 
 template <class T>
-void
-print(const T& t)
-{
-    for (auto n : t) cout << n << " ";
-    cout << endl;
-}
-
-template <class T, size_t L>
 bool
-equal(const T (&lhs)[L], const T (&rhs)[L])
-{
-    for (size_t i = 0; i < L; ++i)
-        if (lhs[i] != rhs[i]) return false;
-    return true;
-}
-bool
-equal(int[0], int[0])
+equal(const T (&), const T (&)[0])
 {
     return true;
 }

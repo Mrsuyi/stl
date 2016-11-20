@@ -8,7 +8,9 @@
 
 namespace mrsuyi
 {
+using std::cin;
 using std::cout;
+using std::cerr;
 using std::endl;
 
 struct shit
@@ -39,6 +41,15 @@ equal(const Container& cont, const T (&x)[N])
     for (size_t i = 0; i < N; ++i, ++it)
         if (*it != x[i]) return false;
 
+    return true;
+}
+
+template <class T, size_t N>
+bool
+equal(const T (&lhs)[N], const T (&rhs)[N])
+{
+    for (size_t i = 0; i < N; ++i)
+        if (lhs[i] != rhs[i]) return false;
     return true;
 }
 

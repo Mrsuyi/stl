@@ -12,7 +12,7 @@ MODS :=
 #================================== prepare ==================================#
 
 MAIN := $(wildcard _*.cpp)
-EXE  := $(patsubst %.cpp, %, $(MAIN))
+EXE  := $(patsubst _%.cpp, %, $(MAIN))
 
 LIBS := $(LIBS:%=%/_bin/lib.a)
 MODS := $(MODS:%=%/_bin/mod.a)
@@ -26,7 +26,7 @@ DEPS := $(patsubst %, _bin/%.d, $(basename $(ALL) $(MAIN) $(TEST)))
 
 all: $(EXE)
 
-$(EXE): %: _bin/%.o $(OBJS) $(MODS) $(LIBS)
+$(EXE): %: _bin/_%.o $(OBJS) $(MODS) $(LIBS)
 	@-mkdir -p _bin
 	$(CXX) $(CXXFLAGS) -o _bin/$@.exe $^
 
