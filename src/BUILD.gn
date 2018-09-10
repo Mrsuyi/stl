@@ -1,0 +1,9 @@
+source_set("unittest") {
+  sources = [
+    "unittest.cc",
+  ]
+  deps = [
+    "//third_party:gtest",
+    "//src/utility:unittest",
+  ]
+}

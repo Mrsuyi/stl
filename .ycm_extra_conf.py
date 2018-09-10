@@ -60,15 +60,8 @@ flags = [
 '-x', 'c++',
 '-isystem', '../BoostParts',
 '-isystem', '/System/Library/Frameworks/Python.framework/Headers', # MacOS only
-'-isystem', '../llvm/include',
-'-isystem', '../llvm/tools/clang/include',
-'-isystem', './tests/gmock/gtest',
-'-isystem', './tests/gmock/gtest/include',
-'-isystem', './tests/gmock',
-'-isystem', './tests/gmock/include',
-'-I', './ClangCompleter',
-'-I', 'include',
-'-I', '.',
+'-I', './third_party/gtest/googletest/include',
+'-I', './src',
 ]
 
 

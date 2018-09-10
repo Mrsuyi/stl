@@ -1,6 +1,5 @@
+.DS_Store
 __pycache__
-_bin
-**.exe
-**.o
-**.out
-**/*.swp
+*.swp
+out
+third_party/
