@@ -1,8 +1,17 @@
+source_set("utility") {
+  sources = [
+    "functions.hpp",
+    "pair.hpp",
+    "tuple.hpp",
+  ]
+}
+
 source_set("unittest") {
   sources = [
     "pair_unittest.cpp",
   ]
   deps = [
+    ":utility",
     "//third_party:gtest",
   ]
 }

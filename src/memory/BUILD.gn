@@ -1,0 +1,20 @@
+source_set("memory") {
+  sources = [
+    "allocator.hpp",
+    "deleter.hpp",
+    "functions.hpp",
+    "shared_ptr.hpp",
+    "unique_ptr.hpp",
+    "weak_ptr.hpp",
+  ]
+}
+
+source_set("unittest") {
+  sources = [
+    "functions_unittest.cpp",
+  ]
+  deps = [
+    ":memory",
+    "//third_party:gtest",
+  ]
+}

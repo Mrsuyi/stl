@@ -1,0 +1,18 @@
+source_set("algorithm") {
+  sources = [
+    "compare.hpp",
+    "heap.hpp",
+    "max_min.hpp",
+    "permutation.hpp",
+    "search.hpp",
+  ]
+}
+
+source_set("unittest") {
+  sources = [
+  ]
+  deps = [
+    ":algorithm",
+    "//third_party:gtest",
+  ]
+}

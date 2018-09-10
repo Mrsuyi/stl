@@ -3,73 +3,84 @@
 #include "functional.hpp"
 #include "iterator.hpp"
 
-namespace mrsuyi
-{
-//================================== find ====================================//
-template <class InputIt, class T>
-InputIt
-find(InputIt first, InputIt last, const T& value)
-{
-    for (; first != last; ++first)
-        if (*first == value) return first;
-    return last;
-}
-template <class InputIt, class UnaryPredicate>
-InputIt
-find_if(InputIt first, InputIt last, UnaryPredicate p)
-{
-    for (; first != last; ++first)
-        if (p(*first)) return first;
-    return last;
-}
-template <class InputIt, class UnaryPredicate>
-InputIt
-find_if_not(InputIt first, InputIt last, UnaryPredicate p)
-{
-    for (; first != last; ++first)
-        if (!p(*first)) return first;
-    return last;
-}
+namespace mrsuyi {
+// lower-bound
+template <class ForwardIt, class T, class Compare>
+ForwardIt lower_bound(ForwardIt first,
+                      ForwardIt last,
+                      const T& value,
+                      Compare cmp) {
+  ForwardIt it;
+  typename mrsuyi::iterator_traits<ForwardIt>::difference_type step, dist;
+  dist = mrsuyi::distance(first, last);
 
-//================================== count ===================================//
-template <class InputIt, class T>
-typename iterator_traits<InputIt>::difference_type
-count(InputIt first, InputIt last, const T& value)
-{
-    typename iterator_traits<InputIt>::difference_type res = 0;
-    for (; first != last; ++first)
-        if (*first == value) ++res;
-    return res;
-}
-template <class InputIt, class UnaryPredicate>
-typename iterator_traits<InputIt>::difference_type
-count_if(InputIt first, InputIt last, UnaryPredicate p)
-{
-    typename iterator_traits<InputIt>::difference_type res = 0;
-    for (; first != last; ++first)
-        if (p(*first)) ++res;
-    return res;
-}
+  while (dist > 0) {
+    it = first;
+    step = dist / 2;
+    mrsuyi::advance(it, step);
 
-//================================= mismatch =================================//
-template <class InputIt1, class InputIt2, class BinaryPredicate>
-mrsuyi::pair<InputIt1, InputIt2>
-mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2, BinaryPredicate p)
-{
-    while (first1 != last1 && p(*first1, *first2))
-    {
-        ++first1;
-        ++first2;
-    }
-    return {first1, first2};
+    if (cmp(*it, value)) {
+      first = ++it;
+      dist -= step + 1;
+    } else
+      dist = step;
+  }
+  return first;
 }
-template <class InputIt1, class InputIt2>
-mrsuyi::pair<InputIt1, InputIt2>
-mismatch(InputIt1 first1, InputIt1 last1, InputIt2 first2)
-{
-    return mismatch(
-        first1, last1, first2,
-        mrsuyi::equal_to<
-            typename mrsuyi::iterator_traits<InputIt1>::value_type>());
+template <class ForwardIt, class T>
+ForwardIt lower_bound(ForwardIt first, ForwardIt last, const T& value) {
+  mrsuyi::lower_bound(first, last, value, mrsuyi::less<T>());
 }
+// upper-bound
+template <class ForwardIt, class T, class Compare>
+ForwardIt upper_bound(ForwardIt first,
+                      ForwardIt last,
+                      const T& value,
+                      Compare cmp) {
+  ForwardIt it;
+  typename mrsuyi::iterator_traits<ForwardIt>::difference_type step, dist;
+  dist = mrsuyi::distance(first, last);
+
+  while (dist > 0) {
+    it = first;
+    step = dist / 2;
+    mrsuyi::advance(it, step);
+
+    if (!cmp(value, *it)) {
+      first = ++it;
+      dist -= step + 1;
+    } else
+      dist = step;
+  }
+  return first;
 }
+template <class ForwardIt, class T>
+ForwardIt upper_bound(ForwardIt first, ForwardIt last, const T& value) {
+  mrsuyi::upper_bound(first, last, value, mrsuyi::less<T>());
+}
+// binary-search
+template <class ForwardIt, class T, class Compare>
+ForwardIt binary_search(ForwardIt first,
+                        ForwardIt last,
+                        const T& value,
+                        Compare cmp) {
+  first = lower_bound(first, last, value, cmp);
+  return (first != last) && (!cmp(value, *first));
+}
+template <class ForwardIt, class T>
+ForwardIt binary_search(ForwardIt first, ForwardIt last, const T& value) {
+  mrsuyi::binary_search(first, last, value, mrsuyi::less<T>());
+}
+// equal-range
+template <class ForwardIt, class T, class Compare>
+mrsuyi::pair<ForwardIt, ForwardIt> equal_range(ForwardIt first,
+                                               ForwardIt last,
+                                               const T& value,
+                                               Compare cmp) {}
+template <class ForwardIt, class T>
+mrsuyi::pair<ForwardIt, ForwardIt> equal_range(ForwardIt first,
+                                               ForwardIt last,
+                                               const T& value) {
+  mrsuyi::equal_range(first, last, value, mrsuyi::less<T>());
+}
+}  // namespace mrsuyi

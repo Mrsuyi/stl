@@ -1,6 +1,6 @@
 #pragma once
 
-#include "algorithm/binary_search.hpp"
+#include "algorithm/search.hpp"
 #include "algorithm/compare.hpp"
 #include "algorithm/heap.hpp"
 #include "algorithm/max_min.hpp"

@@ -1,0 +1,19 @@
+source_set("iterator") {
+  sources = [
+    "functions.hpp",
+    "iterator_category.hpp",
+    "iterator_traits.hpp",
+    "move_iterator.hpp",
+    "reverse_iterator.hpp",
+  ]
+}
+
+source_set("unittest") {
+  sources = [
+    "functions_unittest.cpp",
+  ]
+  deps = [
+    ":iterator",
+    "//third_party:gtest",
+  ]
+}

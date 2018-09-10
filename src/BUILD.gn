@@ -1,9 +1,11 @@
 source_set("unittest") {
   sources = [
-    "unittest.cc",
+    "unittest.cpp",
   ]
   deps = [
     "//third_party:gtest",
     "//src/utility:unittest",
+    "//src/iterator:unittest",
+    "//src/memory:unittest",
   ]
 }
