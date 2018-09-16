@@ -1,0 +1,20 @@
+source_set("functional") {
+  sources = [
+    "arg_forward.hpp",
+    "comparisons.hpp",
+    "hash.hpp",
+  ]
+  deps = [
+    "//src/utility",
+  ]
+}
+
+source_set("unittest") {
+  sources = [
+  ]
+  deps = [
+    ":functional",
+    "//third_party:gtest",
+    "//third_party:gmock",
+  ]
+}

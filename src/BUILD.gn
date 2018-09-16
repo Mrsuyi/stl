@@ -6,8 +6,9 @@ source_set("unittest") {
     "//third_party:gtest",
     "//third_party:gmock",
     "//src/algorithm:unittest",
-    "//src/utility:unittest",
+    "//src/functional:unittest",
     "//src/iterator:unittest",
     "//src/memory:unittest",
+    "//src/utility:unittest",
   ]
 }
