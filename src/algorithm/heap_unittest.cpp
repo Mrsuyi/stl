@@ -1,87 +1,71 @@
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "heap.hpp"
-#include "debug.hpp"
 
 using namespace mrsuyi;
+using namespace testing;
 
-template <class T>
-bool equal(const T(&), const T (&)[0]) {
-  return true;
-}
-
-void push() {
+TEST(HeapTest, PushHeap) {
   int a[] = {5, 1, 2, 4, 8};
   push_heap(a, a + 5);
-  assert(equal(a, {8, 5, 2, 4, 1}));
+  EXPECT_THAT(a, ElementsAreArray({8, 5, 2, 4, 1}));
 
   int b[] = {1};
   push_heap(b, b + 1);
-  assert(equal(b, {1}));
+  EXPECT_THAT(b, ElementsAreArray({1}));
 
   int c[] = {};
   push_heap(c, c);
-  assert(equal(c, {}));
 }
 
-void pop() {
+TEST(HeapTest, PopHeap) {
   int a[] = {8, 5, 2, 4, 1};
   pop_heap(a, a + 5);
-  assert(equal(a, {5, 4, 2, 1, 8}));
+  EXPECT_THAT(a, ElementsAreArray({5, 4, 2, 1, 8}));
 
   int b[] = {1};
   pop_heap(b, b + 1);
-  assert(equal(b, {1}));
+  EXPECT_THAT(b, ElementsAreArray({1}));
 
   int c[] = {};
   pop_heap(c, c);
-  assert(equal(c, {}));
 }
 
-void sort() {
+TEST(HeapTest, SortHeap) {
   int a[] = {8, 5, 2, 4, 1};
   sort_heap(a, a + 5);
-  assert(equal(a, {1, 2, 4, 5, 8}));
+  EXPECT_THAT(a, ElementsAreArray({1, 2, 4, 5, 8}));
 }
 
-void make() {
-  int a[] = {1, 2, 3, 4, 5};
-  make_heap(a, a + 5);
-  print(a);
+/*TEST(HeapTest, MakeHeap) {*/
+// int a[] = {1, 2, 3, 4, 5};
+// make_heap(a, a + 5);
+// EXPECT_THAT(a, ElementsAreArray({5, 4, 3, 1, 2}));
 
-  int b[] = {1, 2, 3};
-  make_heap(b, b + 3);
-  print(b);
+// int b[] = {1, 2, 3};
+// make_heap(b, b + 3);
+// EXPECT_THAT(b, ElementsAreArray({3, 2, 1}));
 
-  int c[] = {};
-  make_heap(c, c);
-  print(c);
-}
+// int c[] = {};
+// make_heap(c, c);
+/*}*/
 
-void _is_heap() {
+TEST(HeapTest, IsHeap) {
   int a[] = {8, 5, 2, 4, 1};
-  assert(is_heap(a, a + 5));
+  EXPECT_TRUE(is_heap(a, a + 5));
 
   int b[] = {1, 2, 3, 4, 5};
-  assert(!is_heap(b, b + 5));
+  EXPECT_FALSE(is_heap(b, b + 5));
 }
 
-void _is_heap_until() {
+TEST(HeapTest, IsHeapUntil) {
   int a[] = {2, 1, 0};
-  assert(is_heap_until(a, a + 3) == a + 3);
+  EXPECT_EQ(3, is_heap_until(a, a + 3) - a);
 
   int b[] = {5, 4, 3, 8};
-  assert(is_heap_until(b, b + 4) == b + 3);
+  EXPECT_EQ(3, is_heap_until(b, b + 4) - b);
 
   int c[] = {5, 4, 3, 1, 9};
-  assert(is_heap_until(c, c + 5) == c + 4);
+  EXPECT_EQ(4, is_heap_until(c, c + 5) - c);
 }
-
-int main() {
-  push();
-  pop();
-  sort();
-  make();
-  _is_heap();
-  _is_heap_until();
-
-  return 0;
-};

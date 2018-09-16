@@ -61,6 +61,7 @@ flags = [
 '-isystem', '../BoostParts',
 '-isystem', '/System/Library/Frameworks/Python.framework/Headers', # MacOS only
 '-I', './third_party/gtest/googletest/include',
+'-I', './third_party/gtest/googlemock/include',
 '-I', './src',
 ]
 

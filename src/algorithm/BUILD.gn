@@ -1,18 +1,27 @@
 source_set("algorithm") {
   sources = [
-    "compare.hpp",
+    "non_modifying_sequence.hpp",
+    "modifying_sequence.hpp",
     "heap.hpp",
     "max_min.hpp",
     "permutation.hpp",
-    "search.hpp",
+    "binary_search.hpp",
+  ]
+  deps = [
+    "//src/iterator",
+    "//src/utility",
   ]
 }
 
 source_set("unittest") {
   sources = [
+    "heap_unittest.cpp",
+    "permutation_unittest.cpp",
+    "binary_search_unittest.cpp",
   ]
   deps = [
     ":algorithm",
     "//third_party:gtest",
+    "//third_party:gmock",
   ]
 }

@@ -4,7 +4,6 @@
 #include "iterator.hpp"
 
 namespace mrsuyi {
-//================================== max-min =================================//
 // max
 template <class T, class Compare>
 const T& max(const T& a, const T& b, Compare cmp) {

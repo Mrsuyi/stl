@@ -53,7 +53,7 @@ template <class InputIterator>
 typename iterator_traits<InputIterator>::difference_type distance(
     InputIterator first,
     InputIterator last) {
-  mrsuyi::__distance(first, last, __iterator_category(first));
+  return mrsuyi::__distance(first, last, __iterator_category(first));
 }
 
 // next
@@ -72,4 +72,14 @@ ForwardIterator prev(
   mrsuyi::advance(it, -n);
   return it;
 }
+
+template <class C>
+constexpr auto size(const C& c) -> decltype(c.size()) {
+  return c.size();
+}
+template <class T, std::size_t N>
+constexpr std::size_t size(const T (&)[N]) noexcept {
+  return N;
+}
+
 }  // namespace mrsuyi

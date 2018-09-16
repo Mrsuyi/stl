@@ -6,5 +6,6 @@ executable("unittest") {
   deps = [
     "//src:unittest",
     "//third_party:gtest",
+    "//third_party:gmock",
   ]
 }
