@@ -29,12 +29,13 @@ ForwardIt uninitialized_copy_n(InputIt first, Size n, ForwardIt result) {
 //==================================== move ==================================//
 template <class InputIt, class ForwardIt>
 ForwardIt uninitialized_move(InputIt first, InputIt last, ForwardIt result) {
-  mrsuyi::uninitialized_copy(mrsuyi::make_move_iterator(first),
-                             mrsuyi::make_move_iterator(last), result);
+  return mrsuyi::uninitialized_copy(mrsuyi::make_move_iterator(first),
+                                    mrsuyi::make_move_iterator(last), result);
 }
 template <class InputIt, class Size, class ForwardIt>
 ForwardIt uninitialized_move_n(InputIt first, Size n, ForwardIt result) {
-  mrsuyi::uninitialized_copy_n(mrsuyi::make_move_iterator(first), n, result);
+  return mrsuyi::uninitialized_copy_n(mrsuyi::make_move_iterator(first), n,
+                                      result);
 }
 
 //==================================== fill ==================================//

@@ -1,0 +1,22 @@
+source_set("container") {
+  sources = [
+    "array.hpp",
+    "vector.hpp",
+  ]
+  deps = [
+    "//src/algorithm",
+    "//src/iterator",
+    "//src/utility",
+  ]
+}
+
+source_set("unittest") {
+  sources = [
+    "array_unittest.cpp",
+    "vector_unittest.cpp",
+  ]
+  deps = [
+    "//third_party:gtest",
+    "//third_party:gmock",
+  ]
+}
