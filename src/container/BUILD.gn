@@ -13,6 +13,9 @@ source_set("container") {
 source_set("unittest") {
   sources = [
     "array_unittest.cpp",
+    "list_unittest.cpp",
+    "priority_queue_unittest.cpp",
+    "stack_unittest.cpp",
     "vector_unittest.cpp",
   ]
   deps = [

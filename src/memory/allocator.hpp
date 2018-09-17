@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdlib>
+#include <type_traits>
 
 namespace mrsuyi {
 template <class T>
@@ -42,4 +43,11 @@ template <class T>
 void allocator<T>::deallocate(T* p, std::size_t) {
   free(p);
 }
+
+template <class T, class Alloc>
+struct uses_allocator
+    : std::integral_constant<
+          bool,
+          std::is_convertible<typename T::allocator_type, Alloc>::value> {};
+
 };  // namespace mrsuyi
