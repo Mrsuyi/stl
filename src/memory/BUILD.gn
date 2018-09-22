@@ -11,6 +11,7 @@ source_set("memory") {
 
 source_set("unittest") {
   sources = [
+    "unique_ptr_unittest.cpp",
   ]
   deps = [
     ":memory",

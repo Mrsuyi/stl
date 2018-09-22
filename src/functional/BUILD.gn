@@ -2,15 +2,18 @@ source_set("functional") {
   sources = [
     "arg_forward.hpp",
     "comparisons.hpp",
+    "function.hpp",
     "hash.hpp",
   ]
   deps = [
+    "//src/memory",
     "//src/utility",
   ]
 }
 
 source_set("unittest") {
   sources = [
+    "function_unittest.cpp",
   ]
   deps = [
     ":functional",

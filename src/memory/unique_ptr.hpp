@@ -1,9 +1,7 @@
 #pragma once
 
 #include <type_traits>
-
-#include "memory.hpp"
-#include "utility.hpp"
+#include "deleter.hpp"
 
 namespace mrsuyi {
 //========================== general unique-ptr ==============================//

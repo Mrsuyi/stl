@@ -11,11 +11,11 @@ typename std::remove_reference<T>::type&& move(T&& arg) noexcept {
 }
 
 template <class T>
-constexpr T&& forward(typename std::remove_reference<T>::type&& t) {
+constexpr T&& forward(typename std::remove_reference<T>::type&& t) noexcept {
   return static_cast<T&&>(t);
 }
 template <class T>
-constexpr T&& forward(typename std::remove_reference<T>::type& t) {
+constexpr T&& forward(typename std::remove_reference<T>::type& t) noexcept {
   return static_cast<T&&>(t);
 }
 
