@@ -9,9 +9,11 @@ source_set("utility") {
 source_set("unittest") {
   sources = [
     "pair_unittest.cpp",
+    "tuple_unittest.cpp",
   ]
   deps = [
     ":utility",
     "//third_party:gtest",
+    "//third_party:gmock",
   ]
 }
