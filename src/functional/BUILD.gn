@@ -14,6 +14,7 @@ source_set("functional") {
 source_set("unittest") {
   sources = [
     "function_unittest.cpp",
+    "mem_fn_unittest.cpp",
   ]
   deps = [
     ":functional",

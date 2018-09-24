@@ -9,11 +9,17 @@ int add(int& a) {
   return ++a;
 }
 
+struct Class {
+  int dec(int& a) { return --a; }
+};
+
 TEST(FunctionTest, ConstructorAndInvoke) {
   // default constructor
   function<void(void)> f;
   // from function pointer
   function<int(int&)> func_ptr(add);
+  // from member function pointer
+  // function<int(Test*, int&)> mem_func_ptr(&Class::dec);
   // from lambda
   function<int(int&)> lambda([](int& a) { return ++a; });
 
@@ -28,6 +34,8 @@ TEST(FunctionTest, ConstructorAndInvoke) {
   EXPECT_EQ(2, num);
   EXPECT_EQ(3, cp(num));
   EXPECT_EQ(3, num);
+  // EXPECT_EQ(4, mem_func_ptr(nullptr, num));
+  // EXPECT_EQ(4, num);
 }
 
 TEST(FunctionTest, CheckValid) {
