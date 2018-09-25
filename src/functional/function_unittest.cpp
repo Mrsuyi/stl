@@ -5,13 +5,16 @@
 
 using namespace mrsuyi;
 
+namespace {
+
 int add(int& a) {
   return ++a;
 }
-
 struct Class {
-  int dec(int& a) { return --a; }
+  int add(int& a) { return ++a; }
 };
+
+}  // namespace
 
 TEST(FunctionTest, ConstructorAndInvoke) {
   // default constructor
@@ -19,11 +22,9 @@ TEST(FunctionTest, ConstructorAndInvoke) {
   // from function pointer
   function<int(int&)> func_ptr(add);
   // from member function pointer
-  // function<int(Class&, int&)> mem_func_ptr(&Class::dec);
-  // function<int(Class&, int&)> mem_func_ptr(&Class::dec);
+  function<int(Class&, int&)> mem_func_ptr(&Class::add);
   // from lambda
   function<int(int&)> lambda([](int& a) { return ++a; });
-
   // copy constructor
   function<int(int&)> cp(lambda);
 
@@ -36,8 +37,8 @@ TEST(FunctionTest, ConstructorAndInvoke) {
   EXPECT_EQ(2, num);
   EXPECT_EQ(3, cp(num));
   EXPECT_EQ(3, num);
-  // EXPECT_EQ(4, mem_func_ptr(c, num));
-  // EXPECT_EQ(4, num);
+  EXPECT_EQ(4, mem_func_ptr(c, num));
+  EXPECT_EQ(4, num);
 }
 
 TEST(FunctionTest, CheckValid) {

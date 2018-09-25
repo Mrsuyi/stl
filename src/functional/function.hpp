@@ -12,7 +12,7 @@ template <class R, class... Args>
 class callable {
  public:
   virtual callable* copy() = 0;
-  virtual R operator()(Args... args) = 0;
+  virtual R operator()(Args&&... args) = 0;
   virtual ~callable(){};
 };
 
@@ -29,7 +29,7 @@ class callable_impl<R(Args...), R (*)(Args...)> : public callable<R, Args...> {
   callable_impl(callable_t pointer) : pointer_(pointer) {}
 
   callable_impl* copy() override { return new callable_impl(pointer_); }
-  R operator()(Args... args) override {
+  R operator()(Args&&... args) override {
     return pointer_(forward<Args>(args)...);
   }
 
@@ -38,19 +38,19 @@ class callable_impl<R(Args...), R (*)(Args...)> : public callable<R, Args...> {
 };
 
 // Specialization for member function pointers.
-template <class T, class R, class... Args>
-class callable_impl<R(Args...), R(T::*)> : public callable<R, Args...> {
+template <class T, class M, class R, class... Args>
+class callable_impl<R(Args...), M T::*> : public callable<R, Args...> {
  public:
-  using callable_t = R(T::*);
+  using callable_t = M T::*;
 
   callable_impl(callable_t pointer) : mem_pointer_(pointer) {}
 
   callable_impl* copy() override { return new callable_impl(mem_pointer_); }
 
-  R operator()(Args... args) override { return Call(forward<Args>(args)...); }
+  R operator()(Args&&... args) override { return Call(forward<Args>(args)...); }
 
   template <class Class, class... CallArgs>
-  R Call(Class c, Args... args) {
+  R Call(Class c, CallArgs&&... args) {
     return mem_fn(mem_pointer_)(c, forward<CallArgs>(args)...);
   }
 
@@ -67,7 +67,7 @@ class callable_impl<R(Args...), F> : public callable<R, Args...> {
   callable_impl(callable_t pointer) : functor_(pointer) {}
 
   callable_impl* copy() override { return new callable_impl(functor_); }
-  R operator()(Args... args) override {
+  R operator()(Args&&... args) override {
     return functor_(forward<Args>(args)...);
   }
 
@@ -106,7 +106,7 @@ class function<R(Args...)> {
   void swap(function& other) noexcept;
 
   // invoke
-  R operator()(Args... args) const;
+  R operator()(Args&&... args) const;
   // check valid
   explicit operator bool() const noexcept;
 
@@ -167,7 +167,7 @@ void function<R(Args...)>::swap(this_type& other) noexcept {
 
 // invoke
 template <class R, class... Args>
-R function<R(Args...)>::operator()(Args... args) const {
+R function<R(Args...)>::operator()(Args&&... args) const {
   return (*callable_)(forward<Args>(args)...);
 }
 

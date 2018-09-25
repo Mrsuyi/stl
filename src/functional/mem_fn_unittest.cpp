@@ -4,10 +4,12 @@
 
 using namespace mrsuyi;
 
+namespace {
 struct Class {
   void nop() {}
   int add(int& num) { return ++num; }
 };
+}  // namespace
 
 TEST(MemFnTest, LRef) {
   Class c;
