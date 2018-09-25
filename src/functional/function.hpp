@@ -1,37 +1,85 @@
 #pragma once
 
 #include <type_traits>
+#include "mem_fn.hpp"
 #include "memory.hpp"
 #include "utility.hpp"
 
 namespace mrsuyi {
-
-// callable
+namespace {
+// Base type for type erasure.
 template <class R, class... Args>
 class callable {
  public:
   virtual callable* copy() = 0;
-  virtual R operator()(Args... args) const = 0;
+  virtual R operator()(Args... args) = 0;
   virtual ~callable(){};
 };
 
-template <class F, class R, class... Args>
-class callable_impl : public callable<R, Args...> {
- public:
-  typedef callable_impl<F, R, Args...> this_type;
-  typedef callable<R, Args...> base_type;
+// Impl type for type erasure.
+template <class Signature, class Type>
+class callable_impl;
 
-  callable_impl(F f) : f_(move(f)) {}
-  R operator()(Args... args) const override {
-    return f_(forward<Args>(args)...);
+// Specialization for function pointers.
+template <class R, class... Args>
+class callable_impl<R(Args...), R (*)(Args...)> : public callable<R, Args...> {
+ public:
+  using callable_t = R (*)(Args...);
+
+  callable_impl(callable_t pointer) : pointer_(pointer) {}
+
+  callable_impl* copy() override { return new callable_impl(pointer_); }
+  R operator()(Args... args) override {
+    return pointer_(forward<Args>(args)...);
   }
-  base_type* copy() override { return new this_type(f_); }
 
  protected:
-  F f_;
+  callable_t pointer_;
 };
 
-// function declaration
+// Specialization for member function pointers.
+template <class T, class R, class... Args>
+class callable_impl<R(Args...), R(T::*)> : public callable<R, Args...> {
+ public:
+  using callable_t = R(T::*);
+
+  callable_impl(callable_t pointer) : mem_pointer_(pointer) {}
+
+  callable_impl* copy() override { return new callable_impl(mem_pointer_); }
+
+  R operator()(Args... args) override { return Call(forward<Args>(args)...); }
+
+  template <class Class, class... CallArgs>
+  R Call(Class c, Args... args) {
+    return mem_fn(mem_pointer_)(c, forward<CallArgs>(args)...);
+  }
+
+ protected:
+  callable_t mem_pointer_;
+};
+
+// Specialization for functors.
+template <class F, class R, class... Args>
+class callable_impl<R(Args...), F> : public callable<R, Args...> {
+ public:
+  using callable_t = F;
+
+  callable_impl(callable_t pointer) : functor_(pointer) {}
+
+  callable_impl* copy() override { return new callable_impl(functor_); }
+  R operator()(Args... args) override {
+    return functor_(forward<Args>(args)...);
+  }
+
+ protected:
+  callable_t functor_;
+};
+
+}  // namespace
+}  // namespace mrsuyi
+
+namespace mrsuyi {
+
 template <class>
 class function;
 
@@ -86,7 +134,7 @@ function<R(Args...)>::function(function&& other) noexcept
 template <class R, class... Args>
 template <class F>
 function<R(Args...)>::function(F f)
-    : callable_(new callable_impl<F, R, Args...>(move(f))) {}
+    : callable_(new callable_impl<R(Args...), F>(move(f))) {}
 
 // operator=
 template <class R, class... Args>
@@ -120,7 +168,7 @@ void function<R(Args...)>::swap(this_type& other) noexcept {
 // invoke
 template <class R, class... Args>
 R function<R(Args...)>::operator()(Args... args) const {
-  return callable_->operator()(forward<Args...>(args)...);
+  return (*callable_)(forward<Args>(args)...);
 }
 
 // check valid

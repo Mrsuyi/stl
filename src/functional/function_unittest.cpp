@@ -19,7 +19,8 @@ TEST(FunctionTest, ConstructorAndInvoke) {
   // from function pointer
   function<int(int&)> func_ptr(add);
   // from member function pointer
-  // function<int(Test*, int&)> mem_func_ptr(&Class::dec);
+  // function<int(Class&, int&)> mem_func_ptr(&Class::dec);
+  // function<int(Class&, int&)> mem_func_ptr(&Class::dec);
   // from lambda
   function<int(int&)> lambda([](int& a) { return ++a; });
 
@@ -27,6 +28,7 @@ TEST(FunctionTest, ConstructorAndInvoke) {
   function<int(int&)> cp(lambda);
 
   // invoke
+  Class c;
   int num = 0;
   EXPECT_EQ(1, func_ptr(num));
   EXPECT_EQ(1, num);
@@ -34,7 +36,7 @@ TEST(FunctionTest, ConstructorAndInvoke) {
   EXPECT_EQ(2, num);
   EXPECT_EQ(3, cp(num));
   EXPECT_EQ(3, num);
-  // EXPECT_EQ(4, mem_func_ptr(nullptr, num));
+  // EXPECT_EQ(4, mem_func_ptr(c, num));
   // EXPECT_EQ(4, num);
 }
 
