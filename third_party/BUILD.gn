@@ -1,0 +1,36 @@
+config("gtest_config") {
+  cflags = [
+    "-pthread",
+    "-isystem",
+    rebase_path("//third_party/gtest/googletest/include"),
+    "-I",
+    rebase_path("//third_party/gtest/googletest"),
+  ]
+}
+
+static_library("gtest") {
+  sources = [
+    "gtest/googletest/src/gtest-all.cc",
+  ]
+  public_configs = [ ":gtest_config" ]
+}
+
+config("gmock_config") {
+  cflags = [
+    "-pthread",
+    "-isystem",
+    rebase_path("//third_party/gtest/googlemock/include"),
+    "-I",
+    rebase_path("//third_party/gtest/googlemock"),
+  ]
+}
+
+static_library("gmock") {
+  sources = [
+    "gtest/googlemock/src/gmock-all.cc",
+  ]
+  public_configs = [ ":gmock_config" ]
+  deps = [
+    ":gtest",
+  ]
+}
